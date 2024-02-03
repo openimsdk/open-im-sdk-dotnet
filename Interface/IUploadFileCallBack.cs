@@ -1,4 +1,4 @@
-namespace openim_sdk_unity.callback
+namespace open_im_sdk.callback
 {
     public interface IUploadFileCallback
     {

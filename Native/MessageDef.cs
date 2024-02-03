@@ -1,4 +1,4 @@
-namespace openim_sdk_unity.native
+namespace open_im_sdk.native
 {
     public enum MessageDef
     {

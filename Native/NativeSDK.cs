@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace openim_sdk_unity.native
+namespace open_im_sdk.native
 {
     delegate void MessageHandler(int id, string msg);
     class IMNativeSDK
@@ -25,7 +25,13 @@ namespace openim_sdk_unity.native
 #elif UNITY_WEBGL
                     public const string IMDLLName = "__Internal";
 #else
-        public const string IMDLLName = "openimsdk";
+#if WINDOWS
+        public const string IMDLLName = "Plugins/x86_64/openimsdk.dll";
+#elif LINUX
+        public const string IMDLLName = "Plugins/linux/openimsdk.so";
+#elif OSX
+        public const string IMDLLName = "Plugins/osx/openimsdk.dylib";
+#endif
 #endif
 #endif
         #endregion

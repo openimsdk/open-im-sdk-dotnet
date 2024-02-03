@@ -1,7 +1,7 @@
 using System;
 using Newtonsoft.Json;
-using openim_sdk_unity.util;
-namespace openim_sdk_unity
+using open_im_sdk.util;
+namespace open_im_sdk
 {
     public class MessageReceipt
     {

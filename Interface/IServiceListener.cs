@@ -1,4 +1,4 @@
-namespace openim_sdk_unity.listener
+namespace open_im_sdk.listener
 {
     public interface IServiceListener
     {

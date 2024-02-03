@@ -1,5 +1,5 @@
 using Newtonsoft.Json;
-namespace openim_sdk_unity
+namespace open_im_sdk
 {
     public class IMConfig
     {

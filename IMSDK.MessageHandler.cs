@@ -1,6 +1,6 @@
-using openim_sdk_unity.native;
+using open_im_sdk.native;
 using Newtonsoft.Json;
-using openim_sdk_unity.util;
+using open_im_sdk.util;
 using System.Collections.Generic;
 using System;
 
@@ -9,7 +9,7 @@ using System;
 #if UNITY_EDITOR || UNITY_EDITOR_OSX || UNITY_IPHONE || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_WEBGL
 using AOT;
 #endif
-namespace openim_sdk_unity
+namespace open_im_sdk
 {
 #if UNITY_EDITOR || UNITY_EDITOR_OSX || UNITY_IPHONE || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_WEBGL
 #else

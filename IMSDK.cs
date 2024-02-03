@@ -1,12 +1,12 @@
 using System.Runtime.InteropServices;
-using openim_sdk_unity.native;
-using openim_sdk_unity.util;
-using openim_sdk_unity.listener;
+using open_im_sdk.native;
+using open_im_sdk.util;
+using open_im_sdk.listener;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System;
 
-namespace openim_sdk_unity
+namespace open_im_sdk
 {
     public partial class IMSDK
     {
