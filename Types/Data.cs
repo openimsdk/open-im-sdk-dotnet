@@ -129,25 +129,31 @@ namespace open_im_sdk
         public string SnapshotPath;
         [JsonProperty("snapshotUUID")]
         public string SnapshotUUID;
-        [JsonProperty("")]
+        [JsonProperty("snapshotSize")]
         public long SnapshotSize;
-        [JsonProperty("")]
+        [JsonProperty("snapshotUrl")]
         public string SnapshotURL;
-        [JsonProperty("")]
+        [JsonProperty("snapshotWidth")]
         public int SnapshotWidth;
-        [JsonProperty("")]
+        [JsonProperty("snapshotHeight")]
         public int SnapshotHeight;
-        [JsonProperty("")]
+        [JsonProperty("snapshotType")]
         public string SnapshotType;
     }
 
     public class FileBaseInfo
     {
+        [JsonProperty("filePath")]
         public string FilePath;
+        [JsonProperty("uuid")]
         public string UUID;
+        [JsonProperty("sourceUrl")]
         public string SourceURL;
+        [JsonProperty("fileName")]
         public string FileName;
+        [JsonProperty("fileSize")]
         public long FileSize;
+        [JsonProperty("fileType")]
         public string FileType;
     }
 
@@ -199,18 +205,31 @@ namespace open_im_sdk
 
     public class VideoElem
     {
+        [JsonProperty("videoPath")]
         public string VideoPath;
+        [JsonProperty("videoUUID")]
         public string VideoUUID;
+        [JsonProperty("videoUrl")]
         public string VideoURL;
+        [JsonProperty("videoType")]
         public string VideoType;
+        [JsonProperty("videoSize")]
         public long VideoSize;
+        [JsonProperty("duration")]
         public long Duration;
+        [JsonProperty("snapshotPath")]
         public string SnapshotPath;
+        [JsonProperty("snapshotUUID")]
         public string SnapshotUUID;
+        [JsonProperty("snapshotSize")]
         public long SnapshotSize;
+        [JsonProperty("snapshotUrl")]
         public string SnapshotURL;
+        [JsonProperty("snapshotWidth")]
         public int SnapshotWidth;
+        [JsonProperty("snapshotHeight")]
         public int SnapshotHeight;
+        [JsonProperty("snapshotType")]
         public string SnapshotType;
     }
 
@@ -232,24 +251,35 @@ namespace open_im_sdk
 
     public class MergeElem
     {
+        [JsonProperty("title")]
         public string Title;
+        [JsonProperty("abstractList")]
         public string[] AbstractList;
+        [JsonProperty("multiMessage")]
         public MsgStruct[] MultiMessage;
+        [JsonProperty("messageEntityList")]
         public MessageEntity[] MessageEntityList;
     }
 
     public class AtTextElem
     {
+        [JsonProperty("text")]
         public string Text;
+        [JsonProperty("atUserList")]
         public string[] AtUserList;
+        [JsonProperty("atUsersInfo")]
         public AtInfo[] AtUsersInfo;
+        [JsonProperty("quoteMessage")]
         public MsgStruct QuoteMessage;
+        [JsonProperty("isAtSelf")]
         public bool IsAtSelf;
     }
 
     public class FaceElem
     {
+        [JsonProperty("index")]
         public int Index;
+        [JsonProperty("data")]
         public string Data;
     }
 
@@ -265,31 +295,41 @@ namespace open_im_sdk
 
     public class CustomElem
     {
+        [JsonProperty("data")]
         public string Data;
+        [JsonProperty("description")]
         public string Description;
+        [JsonProperty("extension")]
         public string Extension;
     }
 
     public class QuoteElem
     {
+        [JsonProperty("text")]
         public string Text;
+        [JsonProperty("quoteMessage")]
         public MsgStruct QuoteMessage;
+        [JsonProperty("messageEntityList")]
         public MessageEntity[] MessageEntityList;
     }
 
     public class NotificationElem
     {
+        [JsonProperty("detail")]
         public string Detail;
     }
 
     public class AdvancedTextElem
     {
+        [JsonProperty("text")]
         public string Text;
+        [JsonProperty("messageEntityList")]
         public MessageEntity[] MessageEntityList;
     }
 
     public class TypingElem
     {
+        [JsonProperty("msgTips")]
         public string MsgTips;
     }
 
@@ -384,86 +424,123 @@ namespace open_im_sdk
 
     public class AttachedInfoElem
     {
+        [JsonProperty("groupHasReadInfo")]
         public GroupHasReadInfo GroupHasReadInfo;
+        [JsonProperty("isPrivateChat")]
         public bool IsPrivateChat;
+        [JsonProperty("burnDuration")]
         public int BurnDuration;
+        [JsonProperty("hasReadTime")]
         public long HasReadTime;
-        public bool NotSenderNotificationPush;
+        [JsonProperty("messageEntityList")]
         public MessageEntity[] MessageEntityList;
+        [JsonProperty("isEncryption")]
         public bool IsEncryption;
+        [JsonProperty("inEncryptStatus")]
         public bool InEncryptStatus;
+        [JsonProperty("messageReactionElem")]
         public ReactionElem[] MessageReactionElem;
+        [JsonProperty("uploadProgress")]
         public UploadProgress Progress;
     }
 
     public class UploadProgress
     {
+        [JsonProperty("total")]
         public long Total;
+        [JsonProperty("save")]
         public long Save;
+        [JsonProperty("current")]
         public long Current;
+        [JsonProperty("uploadID")]
         public string UploadID;
     }
 
     public class ReactionElem
     {
+        [JsonProperty("counter")]
         public int Counter;
+        [JsonProperty("type")]
         public int Type;
+        [JsonProperty("userReactionList")]
         public UserReactionElem[] UserReactionList;
+        [JsonProperty("canRepeat")]
         public bool CanRepeat;
+        [JsonProperty("info")]
         public string Info;
     }
 
     public class UserReactionElem
     {
+        [JsonProperty("userID")]
         public string UserID;
+        [JsonProperty("counter")]
         public int Counter;
+        [JsonProperty("info")]
         public string Info;
     }
 
     public class MessageEntity
     {
+        [JsonProperty("type")]
         public string Type;
+        [JsonProperty("offset")]
         public int Offset;
+        [JsonProperty("length")]
         public int Length;
+        [JsonProperty("url")]
         public string Url;
+        [JsonProperty("ex")]
         public string Ex;
     }
 
     public class GroupHasReadInfo
     {
+        [JsonProperty("hasReadUserIDList")]
         public string[] HasReadUserIDList;
+        [JsonProperty("hasReadCount")]
         public int HasReadCount;
+        [JsonProperty("groupMemberCount")]
         public int GroupMemberCount;
     }
 
     public class CmdJoinedSuperGroup
     {
+        [JsonProperty("operationID")]
         public string OperationID;
     }
 
     public class OANotificationElem
     {
+        [JsonProperty("notificationName")]
         public string NotificationName;
+        [JsonProperty("notificationFaceURL")]
         public string NotificationFaceURL;
+        [JsonProperty("notificationType")]
         public int NotificationType;
+        [JsonProperty("text")]
         public string Text;
+        [JsonProperty("url")]
         public string Url;
+        [JsonProperty("mixType")]
         public int MixType;
-        // public struct Image;
-        public string SourceUrl;
-        public string SnapshotUrl;
-        // public string SourceUrl;
-        // public string SnapshotUrl;
-        public long Duration;
-        // public string SourceUrl;
-        public string FileName;
-        public long FileSize;
+        [JsonProperty("image")]
+        public string Image;
+        [JsonProperty("video")]
+        public string Video;
+        [JsonProperty("file")]
+        public string File;
+        [JsonProperty("ex")]
+        public string Ex;
     }
 
     public class MsgDeleteNotificationElem
     {
+        [JsonProperty("groupID")]
         public string GroupID;
+        [JsonProperty("isAllDelete")]
         public bool IsAllDelete;
+        [JsonProperty("seqList")]
         public string[] SeqList;
     }
     public class LocalFriend
