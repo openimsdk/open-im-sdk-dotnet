@@ -702,11 +702,11 @@ namespace open_im_sdk
             callBackDic[operationID] = cb;
             IMNativeSDK.refuse_friend_application(operationID, Utils.ToJson(userIDHandleMsg));
         }
-        public static void AddBlack(OnSucOrError cb, string blackUserID)
+        public static void AddBlack(OnSucOrError cb, string blackUserID, string ex)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             callBackDic[operationID] = cb;
-            IMNativeSDK.add_black(operationID, blackUserID);
+            IMNativeSDK.add_black(operationID, blackUserID, ex);
         }
         public static void GetBlackList(OnLocalBlackList cb)
         {
@@ -729,11 +729,11 @@ namespace open_im_sdk
             callBackDic[operationID] = cb;
             IMNativeSDK.create_group(operationID, Utils.ToJson(groupReqInfo));
         }
-        public static void JoinGroup(OnSucOrError cb, string groupID, string reqMsg, int cJoinSource)
+        public static void JoinGroup(OnSucOrError cb, string groupID, string reqMsg, int cJoinSource, string ex)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             callBackDic[operationID] = cb;
-            IMNativeSDK.join_group(operationID, groupID, reqMsg, cJoinSource);
+            IMNativeSDK.join_group(operationID, groupID, reqMsg, cJoinSource, ex);
         }
         public static void QuitGroup(OnSucOrError cb, string groupID)
         {

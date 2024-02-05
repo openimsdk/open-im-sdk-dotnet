@@ -97,28 +97,47 @@ namespace open_im_sdk
 
     public class SoundBaseInfo
     {
+        [JsonProperty("uuid")]
         public string UUID;
+        [JsonProperty("soundPath")]
         public string SoundPath;
+        [JsonProperty("sourceUrl")]
         public string SourceURL;
+        [JsonProperty("dataSize")]
         public long DataSize;
+        [JsonProperty("duration")]
         public long Duration;
+        [JsonProperty("soundType")]
         public string SoundType;
     }
 
     public class VideoBaseInfo
     {
+        [JsonProperty("videoPath")]
         public string VideoPath;
+        [JsonProperty("VideoUUID")]
         public string VideoUUID;
+        [JsonProperty("videoUrl")]
         public string VideoURL;
+        [JsonProperty("videoType")]
         public string VideoType;
+        [JsonProperty("videoSize")]
         public long VideoSize;
+        [JsonProperty("duration")]
         public long Duration;
+        [JsonProperty("snapshotPath")]
         public string SnapshotPath;
+        [JsonProperty("snapshotUUID")]
         public string SnapshotUUID;
+        [JsonProperty("")]
         public long SnapshotSize;
+        [JsonProperty("")]
         public string SnapshotURL;
+        [JsonProperty("")]
         public int SnapshotWidth;
+        [JsonProperty("")]
         public int SnapshotHeight;
+        [JsonProperty("")]
         public string SnapshotType;
     }
 
@@ -1052,5 +1071,12 @@ namespace open_im_sdk
         public Int32Value NeedVerification;
         public Int32Value LookMemberInfo;
         public Int32Value ApplyMemberFriend;
+    }
+
+    public class InputStatesChangedData
+    {
+        public string ConversationID;
+        public string UserID;
+        public int[] PlatformIDs;
     }
 }
