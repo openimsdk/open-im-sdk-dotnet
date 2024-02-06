@@ -230,7 +230,7 @@ namespace open_im_sdk.native
         [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void refuse_friend_application(string operationID, string userIDHandleMsg);
         [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void add_black(string operationID, string blackUserID);
+        public static extern void add_black(string operationID, string blackUserID, string ex);
         [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void get_black_list(string operationID);
         [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]
@@ -241,7 +241,7 @@ namespace open_im_sdk.native
         #region group
         public static extern void create_group(string operationId, string groupReqInfo);
         [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void join_group(string operationId, string groupId, string reqMsg, int joinSource);
+        public static extern void join_group(string operationId, string groupId, string reqMsg, int joinSource, string ex);
         [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void quit_group(string operationId, string groupId);
         [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]

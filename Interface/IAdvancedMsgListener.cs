@@ -13,5 +13,6 @@ namespace open_im_sdk.listener
         void OnRecvMessageExtensionsAdded(string msgID, string reactionExtensionList);
         void OnRecvOfflineNewMessage(MsgStruct message);
         void OnMsgDeleted(MsgStruct message);
+        void OnRecvOnlineOnlyMessage(MsgStruct message);
     }
 }
