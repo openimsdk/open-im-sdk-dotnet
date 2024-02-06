@@ -145,7 +145,10 @@ namespace open_im_sdk
         }
         public static string GetLoginUser()
         {
-            return Marshal.PtrToStringUTF8(IMNativeSDK.get_login_user());
+            var strPtr = IMNativeSDK.get_login_user();
+            var loginUser = Marshal.PtrToStringUTF8(strPtr);
+            Marshal.FreeHGlobal(strPtr);
+            return loginUser;
         }
         #endregion
 
@@ -153,8 +156,9 @@ namespace open_im_sdk
         public static MsgStruct CreateTextMessage(string text)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr strPtr = IMNativeSDK.create_text_message(operationID, text);
-            var json = Marshal.PtrToStringUTF8(strPtr);
+            IntPtr res = IMNativeSDK.create_text_message(operationID, text);
+            var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return Utils.FromJson<MsgStruct>(json);
         }
         public static MsgStruct CreateAdvancedTextMessage(string text, MessageEntity[] messageEntityList)
@@ -162,6 +166,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_advanced_text_message(operationID, text, Utils.ToJson(messageEntityList));
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateTextAtMessage(string text, string[] atUserList, AtInfo atUsersInfo, MsgStruct message)
@@ -169,6 +174,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_text_at_message(operationID, text, Utils.ToJson(atUserList), Utils.ToJson(atUsersInfo), Utils.ToJson(message));
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateLocationMessage(string description, double longitude, double latitude)
@@ -176,6 +182,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_location_message(operationID, description, longitude, latitude);
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateCustomMessage(string data, string extension, string description)
@@ -183,6 +190,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_custom_message(operationID, data, extension, description);
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateQuoteMessage(string text, MsgStruct message)
@@ -190,6 +198,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_quote_message(operationID, text, Utils.ToJson(message));
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateAdvancedQuoteMessage(string text, MsgStruct message, MessageEntity[] messageEntityList)
@@ -197,6 +206,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_advanced_quote_message(operationID, text, Utils.ToJson(message), Utils.ToJson(messageEntityList));
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateCardMessage(CardElem cardInfo)
@@ -204,12 +214,14 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_card_message(operationID, Utils.ToJson(cardInfo));
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateVideoMessageFromFullPath(string videoFullPath, string videoType, long duration, string snapshotFullPath)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_video_message_from_full_path(operationID, videoFullPath, videoType, duration, snapshotFullPath);
+            Marshal.FreeHGlobal(res);
             var json = Marshal.PtrToStringUTF8(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
@@ -218,12 +230,14 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_image_message_from_full_path(operationID, imageFullPath);
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateSoundMessageFromFullPath(string soundPath, long duration)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_sound_message_from_full_path(operationID, soundPath, duration);
+            Marshal.FreeHGlobal(res);
             var json = Marshal.PtrToStringUTF8(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
@@ -232,6 +246,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_file_message_from_full_path(operationID, fileFullPath, fileName);
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateImageMessage(string imagePath)
@@ -239,6 +254,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_image_message(operationID, imagePath);
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateImageMessageByURL(string sourcePath, PictureBaseInfo sourcePicture, PictureBaseInfo bigPicture, PictureBaseInfo snapshotPicture)
@@ -246,6 +262,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_image_message_by_url(operationID, sourcePath, Utils.ToJson(sourcePicture), Utils.ToJson(bigPicture), Utils.ToJson(snapshotPicture));
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateSoundMessageByURL(SoundBaseInfo soundBaseInfo)
@@ -253,6 +270,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_sound_message_by_url(operationID, Utils.ToJson(soundBaseInfo));
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateSoundMessage(string soundPath, long duration)
@@ -260,6 +278,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_sound_message(operationID, soundPath, duration);
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateVideoMessageByURL(VideoBaseInfo videoBaseInfo)
@@ -267,6 +286,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_video_message_by_url(operationID, Utils.ToJson(videoBaseInfo));
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateVideoMessage(string videoPath, string videoType, long duration, string snapshotPath)
@@ -274,6 +294,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_video_message(operationID, videoPath, videoType, duration, snapshotPath);
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateFileMessageByURL(FileBaseInfo fileBaseInfo)
@@ -281,6 +302,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_file_message_by_url(operationID, Utils.ToJson(fileBaseInfo));
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateFileMessage(string filePath, string fileName)
@@ -288,6 +310,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_file_message(operationID, filePath, fileName);
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateMergerMessage(MsgStruct[] messageList, string title, string[] summaryList)
@@ -295,6 +318,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_merger_message(operationID, Utils.ToJson(messageList), title, Utils.ToJson(summaryList));
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateFaceMessage(int index, string data)
@@ -302,6 +326,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_face_message(operationID, index, data);
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static MsgStruct CreateForwardMessage(MsgStruct m)
@@ -309,6 +334,7 @@ namespace open_im_sdk
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_forward_message(operationID, Utils.ToJson(m));
             var json = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
         public static void GetAllConversationList(OnConversationList cb)
@@ -405,13 +431,17 @@ namespace open_im_sdk
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.get_at_all_tag(operationID);
-            return Marshal.PtrToStringUTF8(res);
+            var data = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
+            return data;
         }
         public static string GetConversationIdBySessionType(string sourceID, int sessionType)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.get_conversation_id_by_session_type(operationID, sourceID, sessionType);
-            return Marshal.PtrToStringUTF8(res);
+            var data = Marshal.PtrToStringUTF8(res);
+            Marshal.FreeHGlobal(res);
+            return data;
         }
         public static void SendMessage(OnSendMessage cb, MsgStruct message, string recvID, string groupID, OfflinePushInfo offlinePushInfo)
         {
@@ -672,11 +702,11 @@ namespace open_im_sdk
             callBackDic[operationID] = cb;
             IMNativeSDK.refuse_friend_application(operationID, Utils.ToJson(userIDHandleMsg));
         }
-        public static void AddBlack(OnSucOrError cb, string blackUserID)
+        public static void AddBlack(OnSucOrError cb, string blackUserID, string ex)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             callBackDic[operationID] = cb;
-            IMNativeSDK.add_black(operationID, blackUserID);
+            IMNativeSDK.add_black(operationID, blackUserID, ex);
         }
         public static void GetBlackList(OnLocalBlackList cb)
         {
@@ -699,11 +729,11 @@ namespace open_im_sdk
             callBackDic[operationID] = cb;
             IMNativeSDK.create_group(operationID, Utils.ToJson(groupReqInfo));
         }
-        public static void JoinGroup(OnSucOrError cb, string groupID, string reqMsg, int cJoinSource)
+        public static void JoinGroup(OnSucOrError cb, string groupID, string reqMsg, int cJoinSource, string ex)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             callBackDic[operationID] = cb;
-            IMNativeSDK.join_group(operationID, groupID, reqMsg, cJoinSource);
+            IMNativeSDK.join_group(operationID, groupID, reqMsg, cJoinSource, ex);
         }
         public static void QuitGroup(OnSucOrError cb, string groupID)
         {

@@ -140,6 +140,12 @@ namespace open_im_sdk
                         ConversationListener.OnTotalUnreadMessageCountChanged(count);
                     }
                     break;
+                case MessageDef.Msg_ConversationUserInputStatusChanged:
+                    {
+                        var data = Utils.FromJson<InputStatesChangedData>(msg);
+                        ConversationListener.OnConversationUserInputStatusChanged(data);
+                    }
+                    break;
                 case MessageDef.Msg_Advanced_RecvNewMessage:
                     {
                         var data = Utils.FromJson<MsgStruct>(msg);
@@ -194,7 +200,12 @@ namespace open_im_sdk
                         AdvancedMsgListener.OnMsgDeleted(data);
                     }
                     break;
-
+                case MessageDef.Msg_Advanced_RecvOnlineOnlyMessage:
+                    {
+                        var data = Utils.FromJson<MsgStruct>(msg);
+                        AdvancedMsgListener.OnRecvOnlineOnlyMessage(data);
+                    }
+                    break;
                 case MessageDef.Msg_Batch_RecvNewMessages:
                     {
                         var data = Utils.FromJson<List<MsgStruct>>(msg);
