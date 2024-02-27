@@ -53,18 +53,18 @@ namespace open_im_sdk
         {
             if (msgCache.Count > 0)
             {
-                for (int i = 0; i < msgCache.Count; i++)
+                try
                 {
-                    try
+                    IdMsg msg;
+                    while (msgCache.TryDequeue(out msg))
                     {
-                        DispatorMsg((MessageDef)msgCache[i].Id, msgCache[i].Data);
-                    }
-                    catch (Exception e)
-                    {
-                        Utils.Log("DispatorMsg Exception", e.ToString());
+                        DispatorMsg((MessageDef)msg.Id, msg.Data);
                     }
                 }
-                msgCache.Clear();
+                catch (Exception e)
+                {
+                    Utils.Log("DispatorMsg Exception", e.ToString());
+                }
             }
         }
         #endregion
