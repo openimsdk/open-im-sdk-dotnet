@@ -388,7 +388,7 @@ namespace open_im_sdk
         public PictureElem PictureElem;
         [JsonProperty("sourdElem")]
         public SoundElem SoundElem;
-        [JsonProperty("textElem")]
+        [JsonProperty("videoElem")]
         public VideoElem VideoElem;
         [JsonProperty("fileElem")]
         public FileElem FileElem;
