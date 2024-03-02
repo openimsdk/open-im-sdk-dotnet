@@ -20,7 +20,7 @@ namespace open_im_sdk
         public delegate void OnFullUserInfoWithCacheList(List<FullUserInfoWithCache> list, int errCode, string errMsg);
         public delegate void OnGetConversationRecvMessageOptRespList(List<GetConversationRecvMessageOptResp> list, int errCode, string errMsg);
         public delegate void OnFindMesageList(List<FindMessageList> list, int errCode, string errMsg);
-        public delegate void OnGetAdvancedHistoryMessageList(List<GetAdvancedHistoryMessageList> list, int errCode, string errMsg);
+        public delegate void OnGetAdvancedHistoryMessageList(GetAdvancedHistoryMessageList historyMsgList, int errCode, string errMsg);
         public delegate void OnMsgStruct(MsgStruct msg, int errCode, string errMsg);
         public delegate void OnSearchLocalMessagesCallback(SearchLocalMessagesCallback v, int errCode, string errMsg);
         public delegate void OnOnlineStatusList(List<OnlineStatus> list, int errCode, string errMsg);
