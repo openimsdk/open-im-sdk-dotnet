@@ -1556,7 +1556,7 @@ namespace open_im_sdk
     public class GetAdvancedHistoryMessageList
     {
         [JsonProperty("messageList")]
-        public MsgStruct MessageList;
+        public MsgStruct[] MessageList;
 
         [JsonProperty("lastMinSeq")]
         public long LastMinSeq;
