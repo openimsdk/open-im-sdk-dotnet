@@ -38,6 +38,8 @@ namespace open_im_sdk.native
 
         [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetMessageHandler(MessageHandler handler);
+        [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void free_memory(IntPtr memPointer);
 
         #region init_login
         [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]
