@@ -3,6 +3,10 @@ using Newtonsoft.Json;
 using open_im_sdk.util;
 using System.Collections.Generic;
 using System;
+using System.Diagnostics;
+using System.Collections.Concurrent;
+
+
 
 
 
@@ -79,7 +83,7 @@ namespace open_im_sdk
     public partial class IMSDK
     {
 
-        static List<IdMsg> msgCache = new List<IdMsg>();
+        static ConcurrentQueue<IdMsg> msgCache = new ConcurrentQueue<IdMsg>();
         [MonoPInvokeCallback(typeof(MessageHandler))]
         private static void MessageHandler(int msgId, string msg)
         {
@@ -88,11 +92,10 @@ namespace open_im_sdk
                 Id = msgId,
                 Data = msg
             };
-            msgCache.Add(idmsg);
+            msgCache.Enqueue(idmsg);
         }
         public static void DispatorMsg(MessageDef id, string msg)
         {
-            Utils.Log("Recv", id, msg);
             switch (id)
             {
                 case MessageDef.Msg_Connecting:
