@@ -169,7 +169,7 @@ namespace open_im_sdk
             IMNativeSDK.free_memory(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
-        public static MsgStruct CreateTextAtMessage(string text, string[] atUserList, AtInfo atUsersInfo, MsgStruct message)
+        public static MsgStruct CreateTextAtMessage(string text, string[] atUserList, AtInfo[] atUsersInfo, MsgStruct message)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_text_at_message(operationID, text, Utils.ToJson(atUserList), Utils.ToJson(atUsersInfo), Utils.ToJson(message));
