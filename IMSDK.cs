@@ -297,7 +297,7 @@ namespace open_im_sdk
             IMNativeSDK.free_memory(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
-        public static MsgStruct CreateFileMessageByURL(FileBaseInfo fileBaseInfo)
+        public static MsgStruct CreateFileMessageByURL(FileElem fileBaseInfo)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_file_message_by_url(operationID, Utils.ToJson(fileBaseInfo));
