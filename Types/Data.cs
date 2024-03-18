@@ -1,6 +1,4 @@
-using System;
 using Newtonsoft.Json;
-using open_im_sdk.util;
 namespace open_im_sdk
 {
     public class MessageReceipt
@@ -9,15 +7,15 @@ namespace open_im_sdk
         public string GroupID;
         [JsonProperty("userID")]
         public string UserID;
-        [JsonProperty("userID")]
+        [JsonProperty("msgIDList")]
         public string[] MsgIDList;
-        [JsonProperty("userID")]
+        [JsonProperty("readTime")]
         public long ReadTime;
-        [JsonProperty("userID")]
+        [JsonProperty("msgFrom")]
         public int MsgFrom;
-        [JsonProperty("userID")]
+        [JsonProperty("contentType")]
         public int ContentType;
-        [JsonProperty("userID")]
+        [JsonProperty("sessionType")]
         public int SessionType;
     }
 
@@ -139,22 +137,6 @@ namespace open_im_sdk
         public int SnapshotHeight;
         [JsonProperty("snapshotType")]
         public string SnapshotType;
-    }
-
-    public class FileBaseInfo
-    {
-        [JsonProperty("filePath")]
-        public string FilePath;
-        [JsonProperty("uuid")]
-        public string UUID;
-        [JsonProperty("sourceUrl")]
-        public string SourceURL;
-        [JsonProperty("fileName")]
-        public string FileName;
-        [JsonProperty("fileSize")]
-        public long FileSize;
-        [JsonProperty("fileType")]
-        public string FileType;
     }
 
     public class TextElem
