@@ -58,7 +58,7 @@ namespace open_im_sdk
                     IdMsg msg;
                     while (msgCache.TryDequeue(out msg))
                     {
-                        Utils.Log("HandleMsg=>", msg.Id, msg.Data);
+                        Utils.Log("HandleMsg=>", (MessageDef)msg.Id, msg.Data);
                         DispatorMsg((MessageDef)msg.Id, msg.Data);
                     }
                 }
