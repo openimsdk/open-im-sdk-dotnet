@@ -12,6 +12,7 @@ namespace open_im_sdk.util
     {
         public static void Log(params object[] args)
         {
+#if IMSDK_LOG_ENABLE
             StackFrame frame = new StackFrame(1, true);
             string str = "IMSDK:";
             if (frame != null)
@@ -26,6 +27,7 @@ namespace open_im_sdk.util
             UnityEngine.Debug.Log(str);
 #else
             Console.WriteLine(str);
+#endif
 #endif
         }
 
