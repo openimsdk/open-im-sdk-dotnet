@@ -13,6 +13,7 @@ namespace open_im_sdk
         public delegate void OnInt(int v);
         public delegate void OnBool(int v);
         public delegate void OnSucOrError(bool suc, int errCode, string errMsg);
+        public delegate void OnConversation(LocalConversation conversation, int errCode, string errMsg);
         public delegate void OnConversationList(List<LocalConversation> list, int errCode, string errMsg);
         public delegate void OnLocalUser(LocalUser user, int errCode, string errMsg);
         public delegate void OnLocalUserList(List<LocalUser> list, int errCode, string errMsg);
@@ -350,7 +351,7 @@ namespace open_im_sdk
             callBackDic[operationID] = cb;
             IMNativeSDK.get_conversation_list_split(operationID, offset, count);
         }
-        public static void GetOneConversation(OnConversationList cb, int sessionType, string sourceID)
+        public static void GetOneConversation(OnConversation cb, int sessionType, string sourceID)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             callBackDic[operationID] = cb;
