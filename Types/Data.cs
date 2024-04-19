@@ -1594,59 +1594,6 @@ namespace open_im_sdk
         public int Result;
     }
 
-    public class GroupInfo
-    {
-        [JsonProperty("groupID")]
-        public string GroupID;
-
-        [JsonProperty("groupName")]
-        public string GroupName;
-
-        [JsonProperty("notification")]
-        public string Notification;
-
-        [JsonProperty("introduction")]
-        public string Introduction;
-
-        [JsonProperty("faceURL")]
-        public string FaceURL;
-
-        [JsonProperty("ownerUserID")]
-        public string OwnerUserID;
-
-        [JsonProperty("createTime")]
-        public long CreateTime;
-
-        [JsonProperty("memberCount")]
-        public uint MemberCount;
-
-        [JsonProperty("ex")]
-        public string Ex;
-
-        [JsonProperty("status")]
-        public int Status;
-
-        [JsonProperty("creatorUserID")]
-        public string CreatorUserID;
-
-        [JsonProperty("groupType")]
-        public int GroupType;
-
-        [JsonProperty("needVerification")]
-        public int NeedVerification;
-
-        [JsonProperty("lookMemberInfo")]
-        public int LookMemberInfo;
-
-        [JsonProperty("applyMemberFriend")]
-        public int ApplyMemberFriend;
-
-        [JsonProperty("notificationUpdateTime")]
-        public long NotificationUpdateTime;
-
-        [JsonProperty("notificationUserID")]
-        public string NotificationUserID;
-    }
     public class OfflinePushInfo
     {
         [JsonProperty("title")]
@@ -1708,7 +1655,7 @@ namespace open_im_sdk
         public string[] MemberUserIDs;
 
         [JsonProperty("groupInfo")]
-        public GroupInfo GroupInfo;
+        public LocalGroup GroupInfo;
 
         [JsonProperty("adminUserIDs")]
         public string[] AdminUserIDs;

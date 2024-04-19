@@ -29,7 +29,7 @@ namespace open_im_sdk
         public delegate void OnUserIDResultList(List<UserIDResult> list, int errCode, string errMsg);
         public delegate void OnLocalFriendRequestList(List<LocalFriendRequest> list, int errCode, string errMsg);
         public delegate void OnLocalBlackList(List<LocalBlack> list, int errCode, string errMsg);
-        public delegate void OnGroupInfo(GroupInfo groupInfo, int errCode, string errMsg);
+        public delegate void OnGroupInfo(LocalGroup groupInfo, int errCode, string errMsg);
         public delegate void OnLocalGroupList(List<LocalGroup> list, int errCode, string errMsg);
         public delegate void OnLocalGroupMemberList(List<LocalGroupMember> list, int errCode, string errMsg);
         public delegate void OnLocalAdminGroupRequestList(List<LocalAdminGroupRequest> list, int errCode, string errMsg);
