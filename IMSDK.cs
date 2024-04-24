@@ -13,6 +13,7 @@ namespace open_im_sdk
         public delegate void OnInt(int v);
         public delegate void OnBool(int v);
         public delegate void OnSucOrError(bool suc, int errCode, string errMsg);
+        public delegate void OnConversation(LocalConversation conversation, int errCode, string errMsg);
         public delegate void OnConversationList(List<LocalConversation> list, int errCode, string errMsg);
         public delegate void OnLocalUser(LocalUser user, int errCode, string errMsg);
         public delegate void OnLocalUserList(List<LocalUser> list, int errCode, string errMsg);
@@ -28,7 +29,7 @@ namespace open_im_sdk
         public delegate void OnUserIDResultList(List<UserIDResult> list, int errCode, string errMsg);
         public delegate void OnLocalFriendRequestList(List<LocalFriendRequest> list, int errCode, string errMsg);
         public delegate void OnLocalBlackList(List<LocalBlack> list, int errCode, string errMsg);
-        public delegate void OnGroupInfo(List<GroupInfo> list, int errCode, string errMsg);
+        public delegate void OnGroupInfo(LocalGroup groupInfo, int errCode, string errMsg);
         public delegate void OnLocalGroupList(List<LocalGroup> list, int errCode, string errMsg);
         public delegate void OnLocalGroupMemberList(List<LocalGroupMember> list, int errCode, string errMsg);
         public delegate void OnLocalAdminGroupRequestList(List<LocalAdminGroupRequest> list, int errCode, string errMsg);
@@ -58,6 +59,7 @@ namespace open_im_sdk
                     IdMsg msg;
                     while (msgCache.TryDequeue(out msg))
                     {
+                        Utils.Log("HandleMsg=>", (MessageDef)msg.Id, msg.Data);
                         DispatorMsg((MessageDef)msg.Id, msg.Data);
                     }
                 }
@@ -169,7 +171,7 @@ namespace open_im_sdk
             IMNativeSDK.free_memory(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
-        public static MsgStruct CreateTextAtMessage(string text, string[] atUserList, AtInfo atUsersInfo, MsgStruct message)
+        public static MsgStruct CreateTextAtMessage(string text, string[] atUserList, AtInfo[] atUsersInfo, MsgStruct message)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_text_at_message(operationID, text, Utils.ToJson(atUserList), Utils.ToJson(atUsersInfo), Utils.ToJson(message));
@@ -297,7 +299,7 @@ namespace open_im_sdk
             IMNativeSDK.free_memory(res);
             return JsonConvert.DeserializeObject<MsgStruct>(json);
         }
-        public static MsgStruct CreateFileMessageByURL(FileBaseInfo fileBaseInfo)
+        public static MsgStruct CreateFileMessageByURL(FileElem fileBaseInfo)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             IntPtr res = IMNativeSDK.create_file_message_by_url(operationID, Utils.ToJson(fileBaseInfo));
@@ -349,7 +351,7 @@ namespace open_im_sdk
             callBackDic[operationID] = cb;
             IMNativeSDK.get_conversation_list_split(operationID, offset, count);
         }
-        public static void GetOneConversation(OnConversationList cb, int sessionType, string sourceID)
+        public static void GetOneConversation(OnConversation cb, int sessionType, string sourceID)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             callBackDic[operationID] = cb;
@@ -534,17 +536,17 @@ namespace open_im_sdk
             callBackDic[operationID] = cb;
             IMNativeSDK.delete_conversation_and_delete_all_msg(operationID, conversationID);
         }
-        public static void InsertSingleMessageToLocalStorage(OnMsgStruct cb, string message, string recvID, string sendID)
+        public static void InsertSingleMessageToLocalStorage(OnMsgStruct cb, MsgStruct message, string recvID, string sendID)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             callBackDic[operationID] = cb;
-            IMNativeSDK.insert_single_message_to_local_storage(operationID, message, recvID, sendID);
+            IMNativeSDK.insert_single_message_to_local_storage(operationID, Utils.ToJson(message), recvID, sendID);
         }
-        public static void InsertGroupMessageToLocalStorage(OnMsgStruct cb, string message, string groupID, string sendID)
+        public static void InsertGroupMessageToLocalStorage(OnMsgStruct cb, MsgStruct message, string groupID, string sendID)
         {
             var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
             callBackDic[operationID] = cb;
-            IMNativeSDK.insert_group_message_to_local_storage(operationID, message, groupID, sendID);
+            IMNativeSDK.insert_group_message_to_local_storage(operationID, Utils.ToJson(message), groupID, sendID);
         }
         public static void SearchLocalMessages(OnSearchLocalMessagesCallback cb, SearchLocalMessagesParams searchParam)
         {

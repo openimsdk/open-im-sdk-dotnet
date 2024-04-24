@@ -485,7 +485,7 @@ namespace open_im_sdk
                 case DataTypeDef.DataType_LocalBlack_List:
                     return Utils.FromJson<List<LocalBlack>>(msg);
                 case DataTypeDef.DataType_GroupInfo:
-                    return Utils.FromJson<GroupInfo>(msg);
+                    return Utils.FromJson<LocalGroup>(msg);
                 case DataTypeDef.DataType_LocalGroup:
                     return Utils.FromJson<LocalGroup>(msg);
                 case DataTypeDef.DataType_LocalGroup_List:

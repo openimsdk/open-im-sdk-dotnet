@@ -1,6 +1,4 @@
-using System;
 using Newtonsoft.Json;
-using open_im_sdk.util;
 namespace open_im_sdk
 {
     public class MessageReceipt
@@ -9,15 +7,15 @@ namespace open_im_sdk
         public string GroupID;
         [JsonProperty("userID")]
         public string UserID;
-        [JsonProperty("userID")]
+        [JsonProperty("msgIDList")]
         public string[] MsgIDList;
-        [JsonProperty("userID")]
+        [JsonProperty("readTime")]
         public long ReadTime;
-        [JsonProperty("userID")]
+        [JsonProperty("msgFrom")]
         public int MsgFrom;
-        [JsonProperty("userID")]
+        [JsonProperty("contentType")]
         public int ContentType;
-        [JsonProperty("userID")]
+        [JsonProperty("sessionType")]
         public int SessionType;
     }
 
@@ -139,22 +137,6 @@ namespace open_im_sdk
         public int SnapshotHeight;
         [JsonProperty("snapshotType")]
         public string SnapshotType;
-    }
-
-    public class FileBaseInfo
-    {
-        [JsonProperty("filePath")]
-        public string FilePath;
-        [JsonProperty("uuid")]
-        public string UUID;
-        [JsonProperty("sourceUrl")]
-        public string SourceURL;
-        [JsonProperty("fileName")]
-        public string FileName;
-        [JsonProperty("fileSize")]
-        public long FileSize;
-        [JsonProperty("fileType")]
-        public string FileType;
     }
 
     public class TextElem
@@ -1612,59 +1594,6 @@ namespace open_im_sdk
         public int Result;
     }
 
-    public class GroupInfo
-    {
-        [JsonProperty("groupID")]
-        public string GroupID;
-
-        [JsonProperty("groupName")]
-        public string GroupName;
-
-        [JsonProperty("notification")]
-        public string Notification;
-
-        [JsonProperty("introduction")]
-        public string Introduction;
-
-        [JsonProperty("faceURL")]
-        public string FaceURL;
-
-        [JsonProperty("ownerUserID")]
-        public string OwnerUserID;
-
-        [JsonProperty("createTime")]
-        public long CreateTime;
-
-        [JsonProperty("memberCount")]
-        public uint MemberCount;
-
-        [JsonProperty("ex")]
-        public string Ex;
-
-        [JsonProperty("status")]
-        public int Status;
-
-        [JsonProperty("creatorUserID")]
-        public string CreatorUserID;
-
-        [JsonProperty("groupType")]
-        public int GroupType;
-
-        [JsonProperty("needVerification")]
-        public int NeedVerification;
-
-        [JsonProperty("lookMemberInfo")]
-        public int LookMemberInfo;
-
-        [JsonProperty("applyMemberFriend")]
-        public int ApplyMemberFriend;
-
-        [JsonProperty("notificationUpdateTime")]
-        public long NotificationUpdateTime;
-
-        [JsonProperty("notificationUserID")]
-        public string NotificationUserID;
-    }
     public class OfflinePushInfo
     {
         [JsonProperty("title")]
@@ -1726,7 +1655,7 @@ namespace open_im_sdk
         public string[] MemberUserIDs;
 
         [JsonProperty("groupInfo")]
-        public GroupInfo GroupInfo;
+        public LocalGroup GroupInfo;
 
         [JsonProperty("adminUserIDs")]
         public string[] AdminUserIDs;

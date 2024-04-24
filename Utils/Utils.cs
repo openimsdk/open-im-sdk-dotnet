@@ -12,6 +12,15 @@ namespace open_im_sdk.util
     {
         public static void Log(params object[] args)
         {
+#if IMSDK_LOG_ENABLE
+#if UNITY_EDITOR || UNITY_EDITOR_OSX || UNITY_IPHONE || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_WEBGL
+            var str = "IMSDK:";
+            foreach (var v in args)
+            {
+                str += v.ToString() + " ";
+            }
+            UnityEngine.Debug.Log(str);
+#else
             StackFrame frame = new StackFrame(1, true);
             string str = "IMSDK:";
             if (frame != null)
@@ -22,10 +31,8 @@ namespace open_im_sdk.util
             {
                 str += v.ToString() + " ";
             }
-#if UNITY_EDITOR || UNITY_EDITOR_OSX || UNITY_IPHONE || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_WEBGL
-            UnityEngine.Debug.Log(str);
-#else
             Console.WriteLine(str);
+#endif
 #endif
         }
 
