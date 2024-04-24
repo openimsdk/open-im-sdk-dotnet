@@ -8,10 +8,10 @@
 
   </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-      <DefineConstants>DEBUG;WINDOWS</DefineConstants>
+      <DefineConstants>DEBUG;WINDOWS;IMSDK_LOG_ENABLE</DefineConstants>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-      <DefineConstants>RELEASE;WINDOWS</DefineConstants>
+      <DefineConstants>RELEASE;WINDOWS;IMSDK_LOG_ENABLE</DefineConstants>
     </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
