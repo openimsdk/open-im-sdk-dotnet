@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace open_im_sdk.native
 {
-    delegate void MessageHandler(int id, string msg);
+    delegate void MessageHandler(int id, IntPtr msg);
     class IMNativeSDK
     {
         #region IMDLLName

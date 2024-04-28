@@ -1,10 +1,10 @@
 using open_im_sdk.native;
 using Newtonsoft.Json;
 using open_im_sdk.util;
-using System.Collections.Generic;
-using System;
-using System.Diagnostics;
+using System.Text;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 
 
@@ -84,13 +84,16 @@ namespace open_im_sdk
     {
 
         static ConcurrentQueue<IdMsg> msgCache = new ConcurrentQueue<IdMsg>();
+
         [MonoPInvokeCallback(typeof(MessageHandler))]
-        private static void MessageHandler(int msgId, string msg)
+        private static void MessageHandler(int msgId, IntPtr msgPtr)
         {
+            var msg = Marshal.PtrToStringUTF8(msgPtr);
+            Utils.Log("Recv->", msgId, msg);
             var idmsg = new IdMsg
             {
                 Id = msgId,
-                Data = msg
+                Data = msg,
             };
             msgCache.Enqueue(idmsg);
         }
