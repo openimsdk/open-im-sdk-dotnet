@@ -1117,9 +1117,6 @@ namespace open_im_sdk
 
         [JsonProperty("isMsgDestruct")]
         public bool IsMsgDestruct;
-
-        [JsonProperty("latestMsgStruct")]
-        public MsgStruct LatestMsgStruct;
     }
 
     public class LocalConversationUnreadMessage
