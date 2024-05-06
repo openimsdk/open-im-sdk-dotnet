@@ -1,14 +1,10 @@
 using open_im_sdk.native;
 using Newtonsoft.Json;
 using open_im_sdk.util;
-using System.Text;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-
-
-
+#pragma warning disable CS0649
 
 #if UNITY_EDITOR || UNITY_EDITOR_OSX || UNITY_IPHONE || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_WEBGL
 using AOT;

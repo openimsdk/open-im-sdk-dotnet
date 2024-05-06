@@ -103,9 +103,9 @@ namespace open_im_sdk
 
     public enum HandleResult
     {
-        Unprocessed = -1,
-        Agree = 0,
-        Reject = 1,
+        Reject = -1,
+        Unprocessed = 0,
+        Agree = 1,
     }
 
     public enum JoinSource
