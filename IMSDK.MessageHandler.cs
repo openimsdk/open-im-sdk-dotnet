@@ -6,22 +6,8 @@ using System.Runtime.InteropServices;
 
 #pragma warning disable CS0649
 
-#if UNITY_EDITOR || UNITY_EDITOR_OSX || UNITY_IPHONE || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_WEBGL
-using AOT;
-#endif
 namespace open_im_sdk
 {
-#if UNITY_EDITOR || UNITY_EDITOR_OSX || UNITY_IPHONE || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_WEBGL
-#else
-    internal class MonoPInvokeCallbackAttribute : Attribute
-    {
-        Type funcType;
-        public MonoPInvokeCallbackAttribute(Type funcType)
-        {
-            this.funcType = funcType;
-        }
-    }
-#endif
     internal class Error
     {
         [JsonProperty("errCode")]
@@ -81,7 +67,6 @@ namespace open_im_sdk
 
         static ConcurrentQueue<IdMsg> msgCache = new ConcurrentQueue<IdMsg>();
 
-        [MonoPInvokeCallback(typeof(MessageHandler))]
         private static void MessageHandler(int msgId, IntPtr msgPtr)
         {
             var msg = Marshal.PtrToStringUTF8(msgPtr);

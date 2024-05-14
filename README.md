@@ -4,12 +4,6 @@
     </b>
 </h1>
 
-## 背景
-
-基于[openim-sdk-core](https://github.com/openimsdk/openim-sdk-core)导出的C接口openim-sdk-cpp[https://github.com/openimsdk/openim-sdk-cpp/tree/unity]进行dotnet环境二次封装
-unity分支可适于unity主流平台(除了webgl)。
-
-
 ## 安装
 
 1. 下载代码

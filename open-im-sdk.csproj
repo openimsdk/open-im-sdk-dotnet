@@ -1,10 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Version>1.0.0</Version>
+        <Version>0.0.1</Version>
         <TargetFramework>net7.0</TargetFramework>
         <RootNamespace>open_im_sdk</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>disable</Nullable>
+        <PackageId>open-im-sdk</PackageId>
+        <Authors>Yejian</Authors>
+        <Description>a dotnet sdk for open im</Description>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
         <DefineConstants>DEBUG;WINDOWS;IMSDK_LOG_ENABLE</DefineConstants>
@@ -15,10 +18,18 @@
     <ItemGroup>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     </ItemGroup>
-
     <ItemGroup>
-        <None Update="Plugins/x86_64/openimsdk.dll">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <None Update="runtimes/win-x64/native/openimsdk.dll">
+            <Pack>true</Pack>
+            <PackagePath>./</PackagePath>
         </None>
+        <!-- <None Update="runtimes/linux-x64/native/openimsdk.so">
+            <Pack>true</Pack>
+            <PackagePath>./</PackagePath>
+        </None>
+        <None Update="runtimes/osx-x64/native/openimsdk.dylib">
+            <Pack>true</Pack>
+            <PackagePath>./</PackagePath>
+        </None> -->
     </ItemGroup>
 </Project>

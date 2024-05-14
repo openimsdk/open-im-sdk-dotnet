@@ -3,9 +3,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-#if UNITY_EDITOR_WIN || UNITY_EDITOR || UNITY_EDITOR || UNITY_EDITOR_OSX || UNITY_IPHONE || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_WEBGL
-using UnityEngine;
-#endif
+
 namespace open_im_sdk.util
 {
     public static class Utils
@@ -23,11 +21,8 @@ namespace open_im_sdk.util
             {
                 str += v.ToString() + " ";
             }
-#if UNITY_EDITOR || UNITY_EDITOR_OSX || UNITY_IPHONE || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_WEBGL
-            UnityEngine.Debug.Log(str);
-#else
+
             Console.WriteLine(str);
-#endif
 #endif
         }
 
