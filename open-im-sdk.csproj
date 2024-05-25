@@ -23,11 +23,7 @@
             <Pack>true</Pack>
             <PackagePath>./</PackagePath>
         </None>
-        <!-- <None Update="runtimes/linux-x64/native/libopenimsdk.so">
-            <Pack>true</Pack>
-            <PackagePath>./</PackagePath>
-        </None> -->
-        <None Update="runtimes/osx-x64/native/libopenimsdk.dylib">
+        <None Update="runtimes/osx-arm64/native/libopenimsdk.dylib">
             <Pack>true</Pack>
             <PackagePath>./</PackagePath>
         </None>
