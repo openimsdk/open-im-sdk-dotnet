@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Version>0.0.1</Version>
+        <Version>0.0.2</Version>
         <TargetFramework>net7.0</TargetFramework>
         <RootNamespace>open_im_sdk</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -23,13 +23,9 @@
             <Pack>true</Pack>
             <PackagePath>./</PackagePath>
         </None>
-        <!-- <None Update="runtimes/linux-x64/native/openimsdk.so">
+        <None Update="runtimes/osx-arm64/native/libopenimsdk.dylib">
             <Pack>true</Pack>
             <PackagePath>./</PackagePath>
         </None>
-        <None Update="runtimes/osx-x64/native/openimsdk.dylib">
-            <Pack>true</Pack>
-            <PackagePath>./</PackagePath>
-        </None> -->
     </ItemGroup>
 </Project>
