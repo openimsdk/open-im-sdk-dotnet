@@ -1,11 +1,11 @@
-namespace open_im_sdk.listener
+namespace OpenIM.IMSDK.Listener
 {
     public interface IServiceListener
     {
-        void OnGroupApplicationAdded(LocalGroupRequest groupApplication);
-        void OnGroupApplicationAccepted(LocalAdminGroupRequest groupApplication);
-        void OnFriendApplicationAdded(LocalFriendRequest friendApplication);
-        void OnFriendApplicationAccepted(LocalFriendRequest groupApplication);
-        void OnRecvNewMessage(MsgStruct message);
+        void OnGroupApplicationAdded(GroupApplicationInfo groupApplication);
+        void OnGroupApplicationAccepted(GroupApplicationInfo groupApplication);
+        void OnFriendApplicationAdded(FriendApplicationInfo friendApplication);
+        void OnFriendApplicationAccepted(FriendApplicationInfo groupApplication);
+        void OnRecvNewMessage(Message message);
     }
 }

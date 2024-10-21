@@ -1,18 +1,18 @@
 using System.Collections.Generic;
 
-namespace open_im_sdk.listener
+namespace OpenIM.IMSDK.Listener
 {
     public interface IAdvancedMsgListener
     {
-        void OnRecvNewMessage(MsgStruct message);
+        void OnRecvNewMessage(Message message);
         void OnRecvC2CReadReceipt(List<MessageReceipt> msgReceiptList);
         void OnRecvGroupReadReceipt(List<MessageReceipt> groupMsgReceiptList);
         void OnNewRecvMessageRevoked(MessageRevoked messageRevoked);
         void OnRecvMessageExtensionsChanged(string msgID, string reactionExtensionList);
         void OnRecvMessageExtensionsDeleted(string msgID, string reactionExtensionKeyList);
         void OnRecvMessageExtensionsAdded(string msgID, string reactionExtensionList);
-        void OnRecvOfflineNewMessage(MsgStruct message);
-        void OnMsgDeleted(MsgStruct message);
-        void OnRecvOnlineOnlyMessage(MsgStruct message);
+        void OnRecvOfflineNewMessage(Message message);
+        void OnMsgDeleted(Message message);
+        void OnRecvOnlineOnlyMessage(Message message);
     }
 }

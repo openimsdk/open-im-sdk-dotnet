@@ -1,15 +1,15 @@
-namespace open_im_sdk.listener
+namespace OpenIM.IMSDK.Listener
 {
     public interface IFriendShipListener
     {
-        void OnFriendApplicationAdded(LocalFriendRequest friendApplication);
-        void OnFriendApplicationDeleted(LocalFriendRequest friendApplication);
-        void OnFriendApplicationAccepted(LocalFriendRequest friendApplication);
-        void OnFriendApplicationRejected(LocalFriendRequest friendApplication);
-        void OnFriendAdded(LocalFriend friendInfo);
-        void OnFriendDeleted(LocalFriend friendInfo);
-        void OnFriendInfoChanged(LocalFriend friendInfo);
-        void OnBlackAdded(LocalBlack blackInfo);
-        void OnBlackDeleted(LocalBlack blackInfo);
+        void OnFriendApplicationAdded(FriendApplicationInfo friendApplication);
+        void OnFriendApplicationDeleted(FriendApplicationInfo friendApplication);
+        void OnFriendApplicationAccepted(FriendApplicationInfo friendApplication);
+        void OnFriendApplicationRejected(FriendApplicationInfo friendApplication);
+        void OnFriendAdded(FriendInfo friendInfo);
+        void OnFriendDeleted(FriendInfo friendInfo);
+        void OnFriendInfoChanged(FriendInfo friendInfo);
+        void OnBlackAdded(BlackInfo blackInfo);
+        void OnBlackDeleted(BlackInfo blackInfo);
     }
 }

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace open_im_sdk.util
+namespace OpenIM.IMSDK.Util
 {
     public static class Utils
     {

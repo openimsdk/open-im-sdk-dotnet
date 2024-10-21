@@ -4,12 +4,18 @@
     </b>
 </h1>
 
-# a dotnet sdk for openim
+## a dotnet sdk for openim
 
 You can install this package by following the command below
 
-``` bash
-dotnet add package open-im-sdk --version 0.0.1
+```bash
+dotnet add package open-im-sdk --version 1.0.0
+```
+
+## package
+
+```bash
+dotnet pack open-im-sdk.csproj --configuration Release
 ```
 
 ## example

@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 
-namespace open_im_sdk.listener
+namespace OpenIM.IMSDK.Listener
 {
     public interface IBatchMsgListener
     {
-        void OnRecvNewMessages(List<MsgStruct> messageList);
-        void OnRecvOfflineNewMessages(List<MsgStruct> messageList);
+        void OnRecvNewMessages(List<Message> messageList);
+        void OnRecvOfflineNewMessages(List<Message> messageList);
     }
 }

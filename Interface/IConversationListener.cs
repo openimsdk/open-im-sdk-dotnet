@@ -1,14 +1,15 @@
 using System.Collections.Generic;
 
-namespace open_im_sdk.listener
+namespace OpenIM.IMSDK.Listener
 {
     public interface IConversationListener
     {
         void OnSyncServerStart();
         void OnSyncServerFinish();
+        void OnSyncServerProgress(int progress);
         void OnSyncServerFailed();
-        void OnNewConversation(List<LocalConversation> conversationList);
-        void OnConversationChanged(List<LocalConversation> conversationList);
+        void OnNewConversation(List<Conversation> conversationList);
+        void OnConversationChanged(List<Conversation> conversationList);
         void OnTotalUnreadMessageCountChanged(int totalUnreadCount);
         void OnConversationUserInputStatusChanged(InputStatesChangedData data);
     }
