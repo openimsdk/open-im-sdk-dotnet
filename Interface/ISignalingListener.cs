@@ -1,4 +1,4 @@
-namespace open_im_sdk.listener
+namespace OpenIM.IMSDK.Listener
 {
     public interface ISignalingListener
     {

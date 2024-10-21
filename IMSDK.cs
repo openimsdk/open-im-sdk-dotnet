@@ -1,52 +1,33 @@
-using System.Runtime.InteropServices;
-using open_im_sdk.native;
-using open_im_sdk.util;
-using open_im_sdk.listener;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System;
+using System.Reflection;
+using OpenIM.IMSDK.Native;
+using OpenIM.IMSDK.Util;
+using OpenIM.IMSDK.Listener;
 
-namespace open_im_sdk
+namespace OpenIM.IMSDK
 {
+    public interface IMsgSendCallBack
+    {
+        public void OnError(int code, string errMsg);
+        public void OnSuccess(Message msg);
+        public void OnProgress(long progress);
+    }
+
     public partial class IMSDK
     {
-        public delegate void OnInt(int v);
-        public delegate void OnBool(int v);
-        public delegate void OnSucOrError(bool suc, int errCode, string errMsg);
-        public delegate void OnConversation(LocalConversation conversation, int errCode, string errMsg);
-        public delegate void OnConversationList(List<LocalConversation> list, int errCode, string errMsg);
-        public delegate void OnLocalUser(LocalUser user, int errCode, string errMsg);
-        public delegate void OnLocalUserList(List<LocalUser> list, int errCode, string errMsg);
-        public delegate void OnFullUserInfoList(List<FullUserInfo> list, int errCode, string errMsg);
-        public delegate void OnFullUserInfoWithCacheList(List<FullUserInfoWithCache> list, int errCode, string errMsg);
-        public delegate void OnGetConversationRecvMessageOptRespList(List<GetConversationRecvMessageOptResp> list, int errCode, string errMsg);
-        public delegate void OnFindMesageList(List<FindMessageList> list, int errCode, string errMsg);
-        public delegate void OnGetAdvancedHistoryMessageList(GetAdvancedHistoryMessageList historyMsgList, int errCode, string errMsg);
-        public delegate void OnMsgStruct(MsgStruct msg, int errCode, string errMsg);
-        public delegate void OnSearchLocalMessagesCallback(SearchLocalMessagesCallback v, int errCode, string errMsg);
-        public delegate void OnOnlineStatusList(List<OnlineStatus> list, int errCode, string errMsg);
-        public delegate void OnSearchFriendItemList(List<SearchFriendItem> list, int errCode, string errMsg);
-        public delegate void OnUserIDResultList(List<UserIDResult> list, int errCode, string errMsg);
-        public delegate void OnLocalFriendRequestList(List<LocalFriendRequest> list, int errCode, string errMsg);
-        public delegate void OnLocalBlackList(List<LocalBlack> list, int errCode, string errMsg);
-        public delegate void OnGroupInfo(LocalGroup groupInfo, int errCode, string errMsg);
-        public delegate void OnLocalGroupList(List<LocalGroup> list, int errCode, string errMsg);
-        public delegate void OnLocalGroupMemberList(List<LocalGroupMember> list, int errCode, string errMsg);
-        public delegate void OnLocalAdminGroupRequestList(List<LocalAdminGroupRequest> list, int errCode, string errMsg);
-        public delegate void OnLocalGroupRequestList(List<LocalGroupRequest> list, int errCode, string errMsg);
-        public delegate void OnSendMessage(MsgStruct msg, int errCode, string errMsg);
-        private static Dictionary<string, Delegate> callBackDic = new Dictionary<string, Delegate>();
-        private static IConnCallBack connCallBack;
-        private static IConversationListener ConversationListener;
-        private static IGroupListener GroupListener;
-        private static IFriendShipListener FriendShipListener;
-        private static IAdvancedMsgListener AdvancedMsgListener;
-        private static IUserListener UserListener;
-        private static ICustomBusinessListener CustomBusinessListener;
-        private static IBatchMsgListener BatchMsgListener;
+        public delegate void OnBase<T>(T data, int errCode, string errMsg);
 
-        #region sdk help function
-        private static string GetOperationID(string prefix)
+        private static Dictionary<string, Delegate> callBackDic = new Dictionary<string, Delegate>();
+        private static Dictionary<string, IMsgSendCallBack> msgSendCallBackDic = new Dictionary<string, IMsgSendCallBack>();
+        private static IConnListener connListener;
+        private static IConversationListener conversationListener;
+        private static IGroupListener groupListener;
+        private static IFriendShipListener friendShipListener;
+        private static IAdvancedMsgListener advancedMsgListener;
+        private static IUserListener userListener;
+        private static IBatchMsgListener batchMsgListener;
+        private static string GetOperationId(string prefix)
         {
             return prefix + "_" + Utils.GetOperationIndex();
         }
@@ -54,851 +35,1221 @@ namespace open_im_sdk
         {
             if (msgCache.Count > 0)
             {
-                try
+                IdMsg msg;
+                while (msgCache.TryDequeue(out msg))
                 {
-                    IdMsg msg;
-                    while (msgCache.TryDequeue(out msg))
+                    Utils.Log(string.Format("{0}]:{1}", (MessageDef)msg.Id, msg.Data));
+                    try
                     {
-                        Utils.Log("HandleMsg=>", msg.Id, msg.Data);
                         DispatorMsg((MessageDef)msg.Id, msg.Data);
                     }
-                }
-                catch (Exception e)
-                {
-                    Utils.Log("DispatorMsg Exception", e.ToString());
+                    catch (Exception e)
+                    {
+                        Utils.Log(e.ToString());
+                    }
                 }
             }
         }
+
+        #region convert value 
+        class Empty
+        {
+        }
+        class BoolValue
+        {
+            public bool value;
+        }
+        class StringValue
+        {
+            public string value;
+        }
+        class IntValue
+        {
+            public int value;
+        }
         #endregion
 
-        #region set global listener
+        #region  set listener
         public static void SetConversationListener(IConversationListener l)
         {
-            ConversationListener = l;
+            conversationListener = l;
         }
         public static void SetGroupListener(IGroupListener l)
         {
-            GroupListener = l;
+            groupListener = l;
         }
         public static void SetFriendShipListener(IFriendShipListener l)
         {
-            FriendShipListener = l;
+            friendShipListener = l;
         }
         public static void SetAdvancedMsgListener(IAdvancedMsgListener l)
         {
-            AdvancedMsgListener = l;
-        }
-        public static void SetBatchMsgListener(IBatchMsgListener l)
-        {
-            BatchMsgListener = l;
+            advancedMsgListener = l;
         }
         public static void SetUserListener(IUserListener l)
         {
-            UserListener = l;
+            userListener = l;
         }
-        public static void SetCustomBusinessListener(ICustomBusinessListener l)
+        public static void SetBatchMsgListener(IBatchMsgListener l)
         {
-            CustomBusinessListener = l;
+            batchMsgListener = l;
         }
         #endregion
 
         #region init_login
-        public static bool InitSDK(IMConfig config, IConnCallBack cb)
+        public static bool InitSDK(IMConfig _config, IConnListener conn)
         {
-            connCallBack = cb;
-            IMNativeSDK.SetMessageHandler(MessageHandler);
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            var configJson = Utils.ToJson(config);
-            return IMNativeSDK.init_sdk(operationID, configJson);
+            connListener = conn;
+            NativeSDK.SetMessageHandler(MessageHandler);
+            string config = Utils.ToJson(_config);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                config
+            };
+            var res = NativeSDK.CallAPI<BoolValue>(APIKey.InitSDK, Utils.ToJson(args));
+            return res.value;
         }
         public static void UnInitSDK()
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IMNativeSDK.un_init_sdk(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            NativeSDK.CallAPI<Empty>(APIKey.UnInitSDK, Utils.ToJson(args));
         }
-        public static void Login(string uid, string token, OnSucOrError cb)
+        public static void Login(string uid, string token, OnBase<bool> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.login(operationID, uid, token);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                uid,
+                token
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.Login, Utils.ToJson(args));
         }
-        public static void Logout(OnSucOrError cb)
+        public static void Logout(OnBase<bool> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.logout(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.Logout, Utils.ToJson(args));
         }
-        public static void SetAppBackGroundStatus(bool isBackGround, OnSucOrError cb)
+        public static void SetAppBackGroundStatus(OnBase<bool> cb, bool isBackground)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_app_background_status(operationID, isBackGround ? 1 : 0);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                isBackground,
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SetAppBackgroundStatus, Utils.ToJson(args));
         }
-        public static void NetworkStatusChanged(OnSucOrError cb)
+        public static void NetworkStatusChanged(OnBase<bool> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.network_status_changed(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.NetworkStatusChanged, Utils.ToJson(args));
         }
         public static LoginStatus GetLoginStatus()
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            return (LoginStatus)IMNativeSDK.get_login_status(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            var res = NativeSDK.CallAPI<IntValue>(APIKey.GetLoginStatus, Utils.ToJson(args));
+            return (LoginStatus)res.value;
         }
-        public static string GetLoginUser()
+        public static string GetLoginUserId()
         {
-            var strPtr = IMNativeSDK.get_login_user();
-            var loginUser = Marshal.PtrToStringUTF8(strPtr);
-            IMNativeSDK.free_memory(strPtr);
-            return loginUser;
+            var res = NativeSDK.CallAPI<StringValue>(APIKey.GetLoginUserID, "");
+            return res.value;
         }
         #endregion
 
         #region conversation_msg
-        public static MsgStruct CreateTextMessage(string text)
+        public static Message CreateTextMessage(string text)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_text_message(operationID, text);
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return Utils.FromJson<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                text,
+            };
+            var res = NativeSDK.CallAPI<Message>(APIKey.CreateTextMessage, Utils.ToJson(args));
+            return res;
         }
-        public static MsgStruct CreateAdvancedTextMessage(string text, MessageEntity[] messageEntityList)
+        public static Message CreateAdvancedTextMessage(string text, MessageEntity[] messageEntityList)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_advanced_text_message(operationID, text, Utils.ToJson(messageEntityList));
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                text,
+                messageEntityList = Utils.ToJson(messageEntityList)
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateAdvancedTextMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateTextAtMessage(string text, string[] atUserList, AtInfo[] atUsersInfo, MsgStruct message)
+        public static Message CreateTextAtMessage(string text, string[] atUserList, AtInfo[] atUsersInfo, Message message)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_text_at_message(operationID, text, Utils.ToJson(atUserList), Utils.ToJson(atUsersInfo), Utils.ToJson(message));
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                text,
+                atUserList = Utils.ToJson(atUserList),
+                atUsersInfo = Utils.ToJson(atUsersInfo),
+                message = Utils.ToJson(message)
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateTextAtMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateLocationMessage(string description, double longitude, double latitude)
+        public static Message CreateLocationMessage(string description, double longitude, double latitude)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_location_message(operationID, description, longitude, latitude);
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                description,
+                longitude,
+                latitude
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateLocationMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateCustomMessage(string data, string extension, string description)
+        public static Message CreateCustomMessage(string data, string extension, string description)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_custom_message(operationID, data, extension, description);
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                data,
+                extension,
+                description
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateCustomMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateQuoteMessage(string text, MsgStruct message)
+        public static Message CreateQuoteMessage(string text, Message message)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_quote_message(operationID, text, Utils.ToJson(message));
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                text,
+                message = Utils.ToJson(message)
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateQuoteMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateAdvancedQuoteMessage(string text, MsgStruct message, MessageEntity[] messageEntityList)
+        public static Message CreateAdvancedQuoteMessage(string text, Message message, MessageEntity[] messageEntityList)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_advanced_quote_message(operationID, text, Utils.ToJson(message), Utils.ToJson(messageEntityList));
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                text,
+                message = Utils.ToJson(message),
+                messageEntityList = Utils.ToJson(messageEntityList)
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateAdvancedQuoteMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateCardMessage(CardElem cardInfo)
+        public static Message CreateCardMessage(CardElem cardInfo)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_card_message(operationID, Utils.ToJson(cardInfo));
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                cardInfo = Utils.ToJson(cardInfo),
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateCardMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateVideoMessageFromFullPath(string videoFullPath, string videoType, long duration, string snapshotFullPath)
+        public static Message CreateVideoMessageFromFullPath(string videoFullPath, string videoType, long duration, string snapshotFullPath)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_video_message_from_full_path(operationID, videoFullPath, videoType, duration, snapshotFullPath);
-            IMNativeSDK.free_memory(res);
-            var json = Marshal.PtrToStringUTF8(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                videoFullPath,
+                videoType,
+                duration,
+                snapshotFullPath
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateVideoMessageFromFullPath, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateImageMessageFromFullPath(string imageFullPath)
+        public static Message CreateImageMessageFromFullPath(string imageFullPath)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_image_message_from_full_path(operationID, imageFullPath);
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                imageFullPath
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateImageMessageFromFullPath, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateSoundMessageFromFullPath(string soundPath, long duration)
+        public static Message CreateSoundMessageFromFullPath(string soundPath, long duration)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_sound_message_from_full_path(operationID, soundPath, duration);
-            IMNativeSDK.free_memory(res);
-            var json = Marshal.PtrToStringUTF8(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                soundPath,
+                duration
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateSoundMessageFromFullPath, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateFileMessageFromFullPath(string fileFullPath, string fileName)
+        public static Message CreateFileMessageFromFullPath(string fileFullPath, string fileName)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_file_message_from_full_path(operationID, fileFullPath, fileName);
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                fileFullPath,
+                fileName
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateFileMessageFromFullPath, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateImageMessage(string imagePath)
+        public static Message CreateImageMessage(string imagePath)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_image_message(operationID, imagePath);
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                imagePath
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateImageMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateImageMessageByURL(string sourcePath, PictureBaseInfo sourcePicture, PictureBaseInfo bigPicture, PictureBaseInfo snapshotPicture)
+        public static Message CreateImageMessageByURL(string sourcePath, PictureBaseInfo sourcePicture, PictureBaseInfo bigPicture, PictureBaseInfo snapshotPicture)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_image_message_by_url(operationID, sourcePath, Utils.ToJson(sourcePicture), Utils.ToJson(bigPicture), Utils.ToJson(snapshotPicture));
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                sourcePath,
+                sourcePicture = Utils.ToJson(sourcePicture),
+                bigPicture = Utils.ToJson(bigPicture),
+                snapshotPicture = Utils.ToJson(snapshotPicture)
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateImageMessageByURL, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateSoundMessageByURL(SoundBaseInfo soundBaseInfo)
+        public static Message CreateSoundMessageByURL(SoundElem soundBaseInfo)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_sound_message_by_url(operationID, Utils.ToJson(soundBaseInfo));
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                soundBaseInfo = Utils.ToJson(soundBaseInfo)
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateSoundMessageByURL, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateSoundMessage(string soundPath, long duration)
+        public static Message CreateSoundMessage(string soundPath, long duration)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_sound_message(operationID, soundPath, duration);
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                soundPath,
+                duration
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateSoundMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateVideoMessageByURL(VideoBaseInfo videoBaseInfo)
+        public static Message CreateVideoMessageByURL(VideoElem videoBaseInfo)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_video_message_by_url(operationID, Utils.ToJson(videoBaseInfo));
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                videoBaseInfo = Utils.ToJson(videoBaseInfo)
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateVideoMessageByURL, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateVideoMessage(string videoPath, string videoType, long duration, string snapshotPath)
+        public static Message CreateVideoMessage(string videoPath, string videoType, long duration, string snapshotPath)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_video_message(operationID, videoPath, videoType, duration, snapshotPath);
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                videoPath,
+                videoType,
+                duration,
+                snapshotPath,
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateVideoMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateFileMessageByURL(FileElem fileBaseInfo)
+        public static Message CreateFileMessageByURL(FileElem fileBaseInfo)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_file_message_by_url(operationID, Utils.ToJson(fileBaseInfo));
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                fileBaseInfo = Utils.ToJson(fileBaseInfo)
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateFileMessageByURL, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateFileMessage(string filePath, string fileName)
+        public static Message CreateFileMessage(string filePath, string fileName)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_file_message(operationID, filePath, fileName);
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                filePath,
+                fileName
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateFileMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateMergerMessage(MsgStruct[] messageList, string title, string[] summaryList)
+        public static Message CreateMergerMessage(Message[] messageList, string title, string[] summaryList)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_merger_message(operationID, Utils.ToJson(messageList), title, Utils.ToJson(summaryList));
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                messageList = Utils.ToJson(messageList),
+                title,
+                summaryList = Utils.ToJson(summaryList)
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateMergerMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateFaceMessage(int index, string data)
+        public static Message CreateFaceMessage(int index, string data)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_face_message(operationID, index, data);
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                index,
+                data
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateFaceMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static MsgStruct CreateForwardMessage(MsgStruct m)
+        public static Message CreateForwardMessage(Message message)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.create_forward_message(operationID, Utils.ToJson(m));
-            var json = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return JsonConvert.DeserializeObject<MsgStruct>(json);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                message = Utils.ToJson(message)
+            };
+            var msg = NativeSDK.CallAPI<Message>(APIKey.CreateForwardMessage, Utils.ToJson(args));
+            return msg;
         }
-        public static void GetAllConversationList(OnConversationList cb)
+        public static void GetAllConversationList(OnBase<List<Conversation>> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_all_conversation_list(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetAllConversationList, Utils.ToJson(args));
         }
-        public static void GetConversationListSplit(OnConversationList cb, int offset, int count)
+        public static void GetConversationListSplit(OnBase<List<Conversation>> cb, int offset, int count)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_conversation_list_split(operationID, offset, count);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                offset,
+                count
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetConversationListSplit, Utils.ToJson(args));
         }
-        public static void GetOneConversation(OnConversation cb, int sessionType, string sourceID)
+        public static void GetOneConversation(OnBase<Conversation> cb, ConversationType sessionType, string sourceId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_one_conversation(operationID, sessionType, sourceID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                sessionType,
+                sourceId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetOneConversation, Utils.ToJson(args));
         }
-        public static void GetMultipleConversation(OnConversationList cb, string[] conversationIdList)
+        public static void GetMultipleConversation(OnBase<List<Conversation>> cb, string[] conversationIdList)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_multiple_conversation(operationID, Utils.ToJson(conversationIdList));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                conversationIdList = Utils.ToJson(conversationIdList)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetMultipleConversation, Utils.ToJson(args));
         }
-        public static void SetConversationMsgDeStructTime(OnSucOrError cb, string conversationID, long msgDestructTime)
+        public static void HideConversation(OnBase<bool> cb, string conversationId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_conversation_msg_destruct_time(operationID, conversationID, msgDestructTime);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                conversationId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.HideConversation, Utils.ToJson(args));
         }
-        public static void SetConversationIsMsgDeStruct(OnSucOrError cb, string conversationID, bool isMsgDestruct)
+        public static void SetConversation(OnBase<bool> cb, string conversationId, ConversationReq req)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_conversation_is_msg_destruct(operationID, conversationID, isMsgDestruct ? 1 : 0);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                conversationId,
+                req = Utils.ToJson(req)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SetConversation, Utils.ToJson(args));
         }
-        public static void HideConversation(OnSucOrError cb, string conversationID)
+        public static void SetConversationDraft(OnBase<bool> cb, string conversationId, string draftText)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.hide_conversation(operationID, conversationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                conversationId,
+                draftText
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SetConversationDraft, Utils.ToJson(args));
         }
-        public static void GetConversationRecvMessageOpt(OnGetConversationRecvMessageOptRespList cb, string[] conversationIDList)
+        public static void GetTotalUnreadMsgCount(OnBase<int> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_conversation_recv_message_opt(operationID, Utils.ToJson(conversationIDList));
-        }
-        public static void SetConversationDraft(OnSucOrError cb, string conversationID, string draftText)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_conversation_draft(operationID, conversationID, draftText);
-        }
-        public static void ResetConversationGroupAtType(OnSucOrError cb, string conversationID)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.reset_conversation_group_at_type(operationID, conversationID);
-        }
-        public static void PinConversation(OnSucOrError cb, string conversationID, bool isPinned)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.pin_conversation(operationID, conversationID, isPinned ? 1 : 0);
-        }
-        public static void SetConversationPrivateChat(OnSucOrError cb, string conversationID, bool isPrivate)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_conversation_private_chat(operationID, conversationID, isPrivate ? 1 : 0);
-        }
-        public static void SetConversationBurnDuration(OnSucOrError cb, string conversationID, int duration)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_conversation_burn_duration(operationID, conversationID, duration);
-        }
-        public static void SetConversationRecvMessageOpt(OnSucOrError cb, string conversationID, int opt)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_conversation_recv_message_opt(operationID, conversationID, opt);
-        }
-        public static void GetTotalUnreadMsgCount(OnInt cb)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_total_unread_msg_count(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetTotalUnreadMsgCount, Utils.ToJson(args));
         }
         public static string GetAtAllTag()
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.get_at_all_tag(operationID);
-            var data = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return data;
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            var res = NativeSDK.CallAPI<StringValue>(APIKey.GetAtAllTag, Utils.ToJson(args));
+            return res.value;
         }
-        public static string GetConversationIdBySessionType(string sourceID, int sessionType)
+        public static string GetConversationIdBySessionType(string sourceId, int sessionType)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            IntPtr res = IMNativeSDK.get_conversation_id_by_session_type(operationID, sourceID, sessionType);
-            var data = Marshal.PtrToStringUTF8(res);
-            IMNativeSDK.free_memory(res);
-            return data;
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                sourceId,
+                sessionType
+            };
+            var res = NativeSDK.CallAPI<StringValue>(APIKey.GetConversationIDBySessionType, Utils.ToJson(args));
+            return res.value;
         }
-        public static void SendMessage(OnSendMessage cb, MsgStruct message, string recvID, string groupID, OfflinePushInfo offlinePushInfo)
+        public static void SendMessage(IMsgSendCallBack cb, Message message, string recvId, string groupId, OfflinePushInfo offlinePushInfo, bool isOnlineOnly)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.send_message(operationID, Utils.ToJson(message), recvID, groupID, Utils.ToJson(offlinePushInfo));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                message = Utils.ToJson(message),
+                recvId,
+                groupId,
+                offlinePushInfo = Utils.ToJson(offlinePushInfo),
+                isOnlineOnly
+            };
+            msgSendCallBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SendMessage, Utils.ToJson(args));
         }
-        public static void SendMessageNotOSS(OnSendMessage cb, MsgStruct message, string recvID, string groupID, OfflinePushInfo offlinePushInfo)
+        public static void SendMessageNotOSS(IMsgSendCallBack cb, Message message, string recvId, string groupId, OfflinePushInfo offlinePushInfo, bool isOnlineOnly)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.send_message_not_oss(operationID, Utils.ToJson(message), recvID, groupID, Utils.ToJson(offlinePushInfo));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                message = Utils.ToJson(message),
+                recvId,
+                groupId,
+                offlinePushInfo = Utils.ToJson(offlinePushInfo),
+                isOnlineOnly
+            };
+            msgSendCallBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SendMessageNotOss, Utils.ToJson(args));
         }
-        public static void FindMessageList(OnFindMesageList cb, ConversationArgs[] findMessageOptions)
+        public static void FindMessageList(OnBase<FindMessageResult> cb, ConversationArgs[] findMessageOptions)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.find_message_list(operationID, Utils.ToJson(findMessageOptions));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                findMessageOptions = Utils.ToJson(findMessageOptions)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.FindMessageList, Utils.ToJson(args));
         }
-        public static void GetAdvancedHistoryMessageList(OnGetAdvancedHistoryMessageList cb, GetAdvancedHistoryMessageListParams getMessageOptions)
+        public static void GetAdvancedHistoryMessageList(OnBase<AdvancedMessageResult> cb, GetAdvancedHistoryMessageListParams getMessageOptions)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_advanced_history_message_list(operationID, Utils.ToJson(getMessageOptions));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                getMessageOptions = Utils.ToJson(getMessageOptions)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetAdvancedHistoryMessageList, Utils.ToJson(args));
         }
-        public static void GetAdvancedHistoryMessageListReverse(OnGetAdvancedHistoryMessageList cb, GetAdvancedHistoryMessageListParams getMessageOptions)
+        public static void GetAdvancedHistoryMessageListReverse(OnBase<AdvancedMessageResult> cb, GetAdvancedHistoryMessageListParams getMessageOptions)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_advanced_history_message_list_reverse(operationID, Utils.ToJson(getMessageOptions));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                getMessageOptions = Utils.ToJson(getMessageOptions)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetAdvancedHistoryMessageListReverse, Utils.ToJson(args));
         }
-        public static void RevokeMessage(OnGetAdvancedHistoryMessageList cb, string conversationID, string clientMsgID)
+        public static void RevokeMessage(OnBase<bool> cb, string conversationId, string clientMsgId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.revoke_message(operationID, conversationID, clientMsgID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                conversationId,
+                clientMsgId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.RevokeMessage, Utils.ToJson(args));
         }
-        public static void TypingStatusUpdate(OnSucOrError cb, string recvID, string msgTip)
+        public static void TypingStatusUpdate(OnBase<bool> cb, string recvId, string msgTip)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.typing_status_update(operationID, recvID, msgTip);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                recvId,
+                msgTip
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.TypingStatusUpdate, Utils.ToJson(args));
         }
-        public static void MarkConversationMessageAsRead(OnSucOrError cb, string conversationID)
+        public static void MarkConversationMessageAsRead(OnBase<bool> cb, string conversationId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.mark_conversation_message_as_read(operationID, conversationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                conversationId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.MarkConversationMessageAsRead, Utils.ToJson(args));
         }
-        public static void DeleteMessageFromLocalStorage(OnSucOrError cb, string conversationID, string clientMsgID)
+        public static void DeleteMessageFromLocalStorage(OnBase<bool> cb, string conversationId, string clientMsgId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.delete_message_from_local_storage(operationID, conversationID, clientMsgID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                conversationId,
+                clientMsgId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.DeleteMessageFromLocalStorage, Utils.ToJson(args));
         }
-        public static void DeleteMessage(OnSucOrError cb, string conversationID, string clientMsgID)
+        public static void DeleteMessage(OnBase<bool> cb, string conversationId, string clientMsgId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.delete_message(operationID, conversationID, clientMsgID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                conversationId,
+                clientMsgId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.DeleteMessage, Utils.ToJson(args));
         }
-        public static void HideAllConversations(OnSucOrError cb)
+        public static void HideAllConversations(OnBase<bool> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.hide_all_conversations(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.HideAllConversations, Utils.ToJson(args));
         }
-        public static void DeleteAllMsgFromLocalAndSVR(OnSucOrError cb)
+        public static void DeleteAllMsgFromLocalAndSVR(OnBase<bool> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.delete_all_msg_from_local_and_svr(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.DeleteAllMsgFromLocalAndSvr, Utils.ToJson(args));
         }
-        public static void DeleteAllMsgFromLocal(OnSucOrError cb)
+        public static void DeleteAllMsgFromLocal(OnBase<bool> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.delete_all_msg_from_local(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.DeleteAllMsgFromLocal, Utils.ToJson(args));
         }
-        public static void ClearConversationAndDeleteAllMsg(OnSucOrError cb, string conversationID)
+        public static void ClearConversationAndDeleteAllMsg(OnBase<bool> cb, string conversationId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.clear_conversation_and_delete_all_msg(operationID, conversationID);
-
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                conversationId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.ClearConversationAndDeleteAllMsg, Utils.ToJson(args));
         }
-        public static void DeleteConversationAndDeleteAllMsg(OnSucOrError cb, string conversationID)
+        public static void DeleteConversationAndDeleteAllMsg(OnBase<bool> cb, string conversationId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.delete_conversation_and_delete_all_msg(operationID, conversationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                conversationId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.DeleteConversationAndDeleteAllMsg, Utils.ToJson(args));
         }
-        public static void InsertSingleMessageToLocalStorage(OnMsgStruct cb, MsgStruct message, string recvID, string sendID)
+        public static void InsertSingleMessageToLocalStorage(OnBase<Message> cb, Message message, string recvId, string sendId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.insert_single_message_to_local_storage(operationID, Utils.ToJson(message), recvID, sendID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                message = Utils.ToJson(message),
+                recvId,
+                sendId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.InsertSingleMessageToLocalStorage, Utils.ToJson(args));
         }
-        public static void InsertGroupMessageToLocalStorage(OnMsgStruct cb, MsgStruct message, string groupID, string sendID)
+        public static void InsertGroupMessageToLocalStorage(OnBase<Message> cb, Message message, string groupId, string sendId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.insert_group_message_to_local_storage(operationID, Utils.ToJson(message), groupID, sendID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                message = Utils.ToJson(message),
+                groupId,
+                sendId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.InsertGroupMessageToLocalStorage, Utils.ToJson(args));
         }
-        public static void SearchLocalMessages(OnSearchLocalMessagesCallback cb, SearchLocalMessagesParams searchParam)
+        public static void SearchLocalMessages(OnBase<SearchMessageResult> cb, SearchMessagesParams searchParam)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.search_local_messages(operationID, Utils.ToJson(searchParam));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                searchParam = Utils.ToJson(searchParam)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SearchLocalMessages, Utils.ToJson(args));
         }
-        public static void SetMessageLocalEx(OnSucOrError cb, string conversationID, string clientMsgID, string localEx)
+        public static void SetMessageLocalEx(OnBase<bool> cb, string conversationId, string clientMsgId, string localEx)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_message_local_ex(operationID, conversationID, clientMsgID, localEx);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                conversationId,
+                clientMsgId,
+                localEx
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SetMessageLocalEx, Utils.ToJson(args));
         }
         #endregion
 
         #region user
-        public static void GetUsersInfo(OnFullUserInfoList cb, string[] userIDs)
+        public static void GetUsersInfo(OnBase<List<PublicUserInfo>> cb, string[] userIds)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_users_info(operationID, Utils.ToJson(userIDs));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                userIds = Utils.ToJson(userIds)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetUsersInfo, Utils.ToJson(args));
         }
-        public static void GetUsersInfoWithCache(OnFullUserInfoWithCacheList cb, string[] userIds, string groupId)
+        public static void SetSelfInfo(OnBase<bool> cb, UserInfo userInfo)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_users_info_with_cache(operationID, Utils.ToJson(userIds), groupId);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                userInfo = Utils.ToJson(userInfo)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SetSelfInfo, Utils.ToJson(args));
         }
-        public static void GetUsersInfoFromSRV(OnLocalUserList cb, string[] userIDs)
+        public static void GetSelfUserInfo(OnBase<UserInfo> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_users_info_from_srv(operationID, Utils.ToJson(userIDs));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetSelfUserInfo, Utils.ToJson(args));
         }
-        public static void SetSelfInfo(OnSucOrError cb, UserInfo userInfo)
+        public static void SubscribeUsersStatus(OnBase<List<OnlineStatus>> cb, string[] userIds)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_self_info(operationID, Utils.ToJson(userInfo));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                userIds = Utils.ToJson(userIds)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SubscribeUsersStatus, Utils.ToJson(args));
         }
-        public static void SetGlobalRecvMessageOpt(OnSucOrError cb, int opt)
+        public static void UnsubscribeUsersStatus(OnBase<bool> cb, string[] userIds)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_global_recv_message_opt(operationID, opt);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                userIds = Utils.ToJson(userIds)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.UnsubscribeUsersStatus, Utils.ToJson(args));
         }
-        public static void GetSelfUserInfo(OnLocalUser cb)
+        public static void GetSubscribeUsersStatus(OnBase<List<OnlineStatus>> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_self_user_info(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetSubscribeUsersStatus, Utils.ToJson(args));
         }
-        public static void UpdateMsgSenderInfo(OnSucOrError cb, string nickname, string faceURL)
+        public static void GetUserStatus(OnBase<List<OnlineStatus>> cb, string[] userIds)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.update_msg_sender_info(operationID, nickname, faceURL);
-        }
-        public static void SubscribeUsersStatus(OnOnlineStatusList cb, string[] userIDs)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.subscribe_users_status(operationID, Utils.ToJson(userIDs));
-        }
-        public static void UnsubscribeUsersStatus(OnSucOrError cb, string[] userIDs)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.unsubscribe_users_status(operationID, Utils.ToJson(userIDs));
-        }
-        public static void GetSubscribeUsersStatus(OnOnlineStatusList cb)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_subscribe_users_status(operationID);
-        }
-        public static void GetUserStatus(OnOnlineStatusList cb, string[] userIDs)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_user_status(operationID, Utils.ToJson(userIDs));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                userIds = Utils.ToJson(userIds)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetUserStatus, Utils.ToJson(args));
         }
         #endregion
 
         #region friend
-        public static void GetSpecifiedFriendsInfo(OnFullUserInfoList cb, string[] userIDList)
+        public static void GetSpecifiedFriendsInfo(OnBase<List<FriendInfo>> cb, string[] userIdList, bool filterBlack)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_specified_friends_info(operationID, Utils.ToJson(userIDList));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                userIdList = Utils.ToJson(userIdList),
+                filterBlack
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetSpecifiedFriendsInfo, Utils.ToJson(args));
         }
-        public static void GetFriendList(OnFullUserInfoList cb)
+        public static void GetFriendList(OnBase<List<FriendInfo>> cb, bool filterBlack)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_friend_list(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                filterBlack
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetFriendList, Utils.ToJson(args));
         }
-        public static void GetFriendListPage(OnFullUserInfoList cb, int offset, int count)
+        public static void GetFriendListPage(OnBase<List<FriendInfo>> cb, int offset, int count, bool filterBlack)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_friend_list_page(operationID, offset, count);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                offset,
+                count,
+                filterBlack
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetFriendListPage, Utils.ToJson(args));
         }
-        public static void SearchFriends(OnSearchFriendItemList cb, SearchFriendsParam searchParam)
+
+        public static void SearchFriends(OnBase<List<SearchFriendItem>> cb, SearchFriendsParam searchParam)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.search_friends(operationID, Utils.ToJson(searchParam));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                searchParam = Utils.ToJson(searchParam)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SearchFriends, Utils.ToJson(args));
         }
-        public static void CheckFriend(OnUserIDResultList cb, string[] userIDList)
+        public static void UpdateFriends(OnBase<bool> cb, UpdateFriendsReq req)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.check_friend(operationID, Utils.ToJson(userIDList));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                req = Utils.ToJson(req)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.UpdateFriends, Utils.ToJson(args));
         }
-        public static void AddFriend(OnSucOrError cb, ApplyToAddFriendReq userIDReqMsg)
+        public static void CheckFriend(OnBase<List<UserIDResult>> cb, string[] userIdList)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.add_friend(operationID, Utils.ToJson(userIDReqMsg));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                userIdList = Utils.ToJson(userIdList)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.CheckFriend, Utils.ToJson(args));
         }
-        public static void SetFriendRemark(OnSucOrError cb, SetFriendRemarkParams userIDRemark)
+        public static void AddFriend(OnBase<bool> cb, ApplyToAddFriendReq userIdReqMsg)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_friend_remark(operationID, Utils.ToJson(userIDRemark));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                userIdReqMsg = Utils.ToJson(userIdReqMsg)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.AddFriend, Utils.ToJson(args));
         }
-        public static void DeleteFriend(OnSucOrError cb, string friendUserID)
+        public static void DeleteFriend(OnBase<bool> cb, string friendUserId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.delete_friend(operationID, friendUserID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                friendUserId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.DeleteFriend, Utils.ToJson(args));
         }
-        public static void GetFriendApplicationListAsRecipient(OnLocalFriendRequestList cb)
+        public static void GetFriendApplicationListAsRecipient(OnBase<List<FriendApplicationInfo>> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_friend_application_list_as_recipient(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetFriendApplicationListAsRecipient, Utils.ToJson(args));
         }
-        public static void GetFriendApplicationListAsApplicant(OnLocalFriendRequestList cb)
+        public static void GetFriendApplicationListAsApplicant(OnBase<List<FriendApplicationInfo>> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_friend_application_list_as_applicant(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetFriendApplicationListAsApplicant, Utils.ToJson(args));
         }
-        public static void AcceptFriendApplication(OnSucOrError cb, ProcessFriendApplicationParams userIDHandleMsg)
+        public static void AcceptFriendApplication(OnBase<bool> cb, ProcessFriendApplicationParams userIDHandleMsg)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.accept_friend_application(operationID, Utils.ToJson(userIDHandleMsg));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                userIdHandleMsg = Utils.ToJson(userIDHandleMsg)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.AcceptFriendApplication, Utils.ToJson(args));
         }
-        public static void RefuseFriendApplication(OnSucOrError cb, ProcessFriendApplicationParams userIDHandleMsg)
+        public static void RefuseFriendApplication(OnBase<bool> cb, ProcessFriendApplicationParams userIdHandleMsg)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.refuse_friend_application(operationID, Utils.ToJson(userIDHandleMsg));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                userIdHandleMsg = Utils.ToJson(userIdHandleMsg)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.RefuseFriendApplication, Utils.ToJson(args));
         }
-        public static void AddBlack(OnSucOrError cb, string blackUserID, string ex)
+        public static void AddBlack(OnBase<bool> cb, string blackUserId, string ex)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.add_black(operationID, blackUserID, ex);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                blackUserId,
+                ex
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.AddBlack, Utils.ToJson(args));
         }
-        public static void GetBlackList(OnLocalBlackList cb)
+        public static void GetBlackList(OnBase<List<BlackInfo>> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_black_list(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetBlackList, Utils.ToJson(args));
         }
-        public static void RemoveBlack(OnSucOrError cb, string removeUserID)
+        public static void RemoveBlack(OnBase<bool> cb, string removeUserId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.remove_black(operationID, removeUserID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                removeUserId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.RemoveBlack, Utils.ToJson(args));
         }
         #endregion
 
         #region group
-        public static void CreateGroup(OnGroupInfo cb, CreateGroupReq groupReqInfo)
+        public static void CreateGroup(OnBase<GroupInfo> cb, CreateGroupReq groupReqInfo)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.create_group(operationID, Utils.ToJson(groupReqInfo));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupReqInfo = Utils.ToJson(groupReqInfo)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.CreateGroup, Utils.ToJson(args));
         }
-        public static void JoinGroup(OnSucOrError cb, string groupID, string reqMsg, int cJoinSource, string ex)
+        public static void JoinGroup(OnBase<bool> cb, string groupId, string reqMsg, JoinSource joinSource, string ex)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.join_group(operationID, groupID, reqMsg, cJoinSource, ex);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                reqMsg,
+                joinSource = (int)joinSource,
+                ex,
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.JoinGroup, Utils.ToJson(args));
         }
-        public static void QuitGroup(OnSucOrError cb, string groupID)
+        public static void QuitGroup(OnBase<bool> cb, string groupId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.quit_group(operationID, groupID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.QuitGroup, Utils.ToJson(args));
         }
 
-        public static void DismissGroup(OnSucOrError cb, string groupID)
+        public static void DismissGroup(OnBase<bool> cb, string groupId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.dismiss_group(operationID, groupID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.DismissGroup, Utils.ToJson(args));
         }
-        public static void ChangeGroupMute(OnSucOrError cb, string groupID, bool isMute)
+        public static void ChangeGroupMute(OnBase<bool> cb, string groupId, bool isMute)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.change_group_mute(operationID, groupID, isMute ? 1 : 0);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                isMute,
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.ChangeGroupMute, Utils.ToJson(args));
         }
-        public static void ChangeGroupMemberMute(OnSucOrError cb, string groupID, string userID, int mutedSeconds)
+        public static void ChangeGroupMemberMute(OnBase<bool> cb, string groupId, string userId, int mutedSeconds)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.change_group_member_mute(operationID, groupID, userID, mutedSeconds);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                userId,
+                mutedSeconds
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.ChangeGroupMemberMute, Utils.ToJson(args));
         }
-        public static void SetGroupMemberRoleLevel(OnSucOrError cb, string groupID, string userID, int roleLevel)
+        public static void SetGroupMemberInfo(OnBase<bool> cb, SetGroupMemberInfo groupMemberInfo)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_group_member_role_level(operationID, groupID, userID, roleLevel);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupMemberInfo = Utils.ToJson(groupMemberInfo)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SetGroupMemberInfo, Utils.ToJson(args));
         }
-        public static void SetGroupMemberInfo(OnSucOrError cb, SetGroupMemberInfo groupMemberInfo)
+        public static void GetJoinedGroupList(OnBase<List<GroupInfo>> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_group_member_info(operationID, Utils.ToJson(groupMemberInfo));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetJoinedGroupList, Utils.ToJson(args));
         }
-        public static void GetJoinedGroupList(OnLocalGroupList cb)
+        public static void GetJoinedGroupListPage(OnBase<List<GroupInfo>> cb, int offset, int count)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_joined_group_list(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                offset,
+                count
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetJoinedGroupListPage, Utils.ToJson(args));
         }
-        public static void GetSpecifiedGroupsInfo(OnLocalGroupList cb, string[] groupIDList)
+        public static void GetSpecifiedGroupsInfo(OnBase<List<GroupInfo>> cb, string[] groupIdList)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_specified_groups_info(operationID, Utils.ToJson(groupIDList));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupIdList = Utils.ToJson(groupIdList)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetSpecifiedGroupsInfo, Utils.ToJson(args));
         }
-        public static void SearchGroups(OnLocalGroupList cb, SearchGroupsParam searchParam)
+        public static void SearchGroups(OnBase<List<GroupInfo>> cb, SearchGroupsParam searchParam)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.search_groups(operationID, Utils.ToJson(searchParam));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                searchParam = Utils.ToJson(searchParam)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SearchGroups, Utils.ToJson(args));
         }
-        public static void SetGroupInfo(OnSucOrError cb, GroupInfoForSet groupInfo)
+        public static void SetGroupInfo(OnBase<bool> cb, GroupInfoForSet groupInfo)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_group_info(operationID, Utils.ToJson(groupInfo));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupInfo = Utils.ToJson(groupInfo)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SetGroupInfo, Utils.ToJson(args));
         }
-        public static void SetGroupVerification(OnSucOrError cb, string groupID, int verification)
+        public static void GetGroupMemberList(OnBase<List<GroupMember>> cb, string groupId, GroupMemberFilter filter, int offset, int count)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_group_verification(operationID, groupID, verification);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                filter,
+                offset,
+                count,
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetGroupMemberList, Utils.ToJson(args));
         }
-        public static void SetGroupLookMemberInfo(OnSucOrError cb, string groupID, int rule)
+        public static void GetGroupMemberOwnerAndAdmin(OnBase<List<GroupMember>> cb, string groupId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_group_look_member_info(operationID, groupID, rule);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetGroupMemberOwnerAndAdmin, Utils.ToJson(args));
         }
-        public static void SetGroupApplyMemberFriend(OnSucOrError cb, string groupID, int rule)
+        public static void GetGroupMemberListByJoinTimeFilter(OnBase<List<GroupMember>> cb, string groupId, int offset, int count, long joinTimeBegin, long joinTimeEnd, string[] filterUserIDList)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_group_apply_member_friend(operationID, groupID, rule);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                offset,
+                count,
+                joinTimeBegin,
+                joinTimeEnd,
+                filterUserIdList = Utils.ToJson(filterUserIDList)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetGroupMemberListByJoinTimeFilter, Utils.ToJson(args));
         }
-        public static void GetGroupMemberList(OnLocalGroupMemberList cb, string groupID, int filter, int offset, int count)
+        public static void GetSpecifiedGroupMembersInfo(OnBase<List<GroupMember>> cb, string groupId, string[] userIdList)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_group_member_list(operationID, groupID, filter, offset, count);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                userIdList = Utils.ToJson(userIdList)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetSpecifiedGroupMembersInfo, Utils.ToJson(args));
         }
-        public static void GetGroupMemberOwnerAndAdmin(OnLocalGroupMemberList cb, string groupID)
+        public static void KickGroupMember(OnBase<bool> cb, string groupId, string reason, string[] userIdList)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_group_member_owner_and_admin(operationID, groupID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                reason,
+                userIdList = Utils.ToJson(userIdList)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.KickGroupMember, Utils.ToJson(args));
         }
-        public static void GetGroupMemberListByJoinTimeFilter(OnLocalGroupMemberList cb, string groupID, int offset, int count, long joinTimeBegin, long joinTimeEnd, string[] filterUserIDList)
+        public static void TransferGroupOwner(OnBase<bool> cb, string groupId, string newOwnerUserId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_group_member_list_by_join_time_filter(operationID, groupID, offset, count, joinTimeBegin, joinTimeEnd, Utils.ToJson(filterUserIDList));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                newOwnerUserId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.TransferGroupOwner, Utils.ToJson(args));
         }
-        public static void GetSpecifiedGroupMembersInfo(OnLocalGroupMemberList cb, string groupID, string[] userIDList)
+        public static void InviteUserToGroup(OnBase<bool> cb, string groupId, string reason, string[] userIdList)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_specified_group_members_info(operationID, groupID, Utils.ToJson(userIDList));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                reason,
+                userIdList = Utils.ToJson(userIdList)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.InviteUserToGroup, Utils.ToJson(args));
         }
-        public static void KickGroupMember(OnSucOrError cb, string groupID, string reason, string[] userIDList)
+        public static void GetGroupApplicationListAsRecipient(OnBase<List<GroupApplicationInfo>> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.kick_group_member(operationID, groupID, reason, Utils.ToJson(userIDList));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetGroupApplicationListAsRecipient, Utils.ToJson(args));
         }
-        public static void TransferGroupOwner(OnSucOrError cb, string groupID, string newOwnerUserID)
+        public static void GetGroupApplicationListAsApplicant(OnBase<List<GroupApplicationInfo>> cb)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.transfer_group_owner(operationID, groupID, newOwnerUserID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetGroupApplicationListAsApplicant, Utils.ToJson(args));
         }
-        public static void InviteUserToGroup(OnSucOrError cb, string groupID, string reason, string[] userIDList)
+        public static void AcceptGroupApplication(OnBase<bool> cb, string groupId, string fromUserId, string handleMsg)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.invite_user_to_group(operationID, groupID, reason, Utils.ToJson(userIDList));
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                fromUserId,
+                handleMsg,
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.AcceptGroupApplication, Utils.ToJson(args));
         }
-        public static void GetGroupApplicationListAsRecipient(OnLocalAdminGroupRequestList cb)
+        public static void RefuseGroupApplication(OnBase<bool> cb, string groupId, string fromUserId, string handleMsg)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_group_application_list_as_recipient(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                fromUserId,
+                handleMsg
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.RefuseFriendApplication, Utils.ToJson(args));
         }
-        public static void GetGroupApplicationListAsApplicant(OnLocalGroupRequestList cb)
+        public static void SearchGroupMembers(OnBase<List<GroupMember>> cb, SearchGroupMembersParam searchParam)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.get_group_application_list_as_applicant(operationID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                searchParam = Utils.ToJson(searchParam)
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.SearchGroupMembers, Utils.ToJson(args));
         }
-        public static void AcceptGroupApplication(OnSucOrError cb, string groupID, string fromUserID, string handleMsg)
+        public static void IsJoinGroup(OnBase<bool> cb, string groupId)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.accept_group_application(operationID, groupID, fromUserID, handleMsg);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.IsJoinGroup, Utils.ToJson(args));
         }
-        public static void RefuseGroupApplication(OnSucOrError cb, string groupID, string fromUserID, string handleMsg)
+        public static void GetUsersInGroup(OnBase<string[]> cb, string groupId, string[] userIdList)
         {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.refuse_group_application(operationID, groupID, fromUserID, handleMsg);
-        }
-        public static void SetGroupMemberNickname(OnSucOrError cb, string groupID, string userID, string groupMemberNickname)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.set_group_member_nickname(operationID, groupID, userID, groupMemberNickname);
-        }
-        public static void SearchGroupMembers(OnLocalGroupMemberList cb, SearchGroupMembersParam searchParam)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.search_group_members(operationID, Utils.ToJson(searchParam));
-        }
-        public static void IsJoinGroup(OnBool cb, string groupID)
-        {
-            var operationID = GetOperationID(System.Reflection.MethodBase.GetCurrentMethod().Name);
-            callBackDic[operationID] = cb;
-            IMNativeSDK.is_join_group(operationID, groupID);
+            var args = new
+            {
+                operationId = GetOperationId(MethodBase.GetCurrentMethod().Name),
+                groupId,
+                userIdList
+            };
+            callBackDic[args.operationId] = cb;
+            NativeSDK.CallAPI<Empty>(APIKey.GetUsersInGroup, Utils.ToJson(args));
         }
         #endregion
     }

@@ -1,4 +1,4 @@
-namespace open_im_sdk
+namespace OpenIM.IMSDK
 {
     public enum PlatformID
     {

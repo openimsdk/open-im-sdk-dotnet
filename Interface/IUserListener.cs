@@ -1,8 +1,11 @@
-namespace open_im_sdk.listener
+namespace OpenIM.IMSDK.Listener
 {
     public interface IUserListener
     {
-        void OnSelfInfoUpdated(LocalUser userInfo);
+        void OnSelfInfoUpdated(UserInfo userInfo);
         void OnUserStatusChanged(OnlineStatus userOnlineStatus);
+        void OnUserCommandAdd(string userCommand);
+        void OnUserCommandDelete(string userCommand);
+        void OnUserCommandUpdate(string userCommand);
     }
 }
