@@ -38,7 +38,7 @@ namespace OpenIM.IMSDK
                 IdMsg msg;
                 while (msgCache.TryDequeue(out msg))
                 {
-                    Utils.Log(string.Format("{0}]:{1}", (MessageDef)msg.Id, msg.Data));
+                    Utils.Log(string.Format("[{0}]:{1}", (MessageDef)msg.Id, msg.Data));
                     try
                     {
                         DispatorMsg((MessageDef)msg.Id, msg.Data);

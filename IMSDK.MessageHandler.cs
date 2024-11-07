@@ -381,7 +381,7 @@ namespace OpenIM.IMSDK
                 case MessageDef.Msg_SendMessage_Success:
                     {
                         var data = Utils.FromJson<Success>(msg);
-                        Message message = ConvertDataType(data.DataType, data.Data) as Message;
+                        Message message = Utils.FromJson<Message>(data.Data);
                         if (msgSendCallBackDic.TryGetValue(data.OperationId, out var callBack))
                         {
                             callBack.OnSuccess(message);
@@ -404,89 +404,106 @@ namespace OpenIM.IMSDK
                     break;
             }
         }
-        private static void DispatorActiveCallMsg(ActiveCallResult msg)
+        private static void DispatorActiveCallMsg(ActiveCallResult res)
         {
-            if (callBackDic.TryGetValue(msg.OperationId, out Delegate func))
+            if (callBackDic.TryGetValue(res.OperationId, out Delegate func))
             {
-                if (msg.ErrCode >= 0)
+                func.DynamicInvoke(ConvertDataType(res), 0, "");
+                callBackDic.Remove(res.OperationId);
+            }
+        }
+        private static object ConvertDataType(ActiveCallResult res)
+        {
+            var type = (DataTypeDef)res.DataType;
+            var msg = res.Data;
+            if (res.ErrCode > 0)
+            {
+                if (type == DataTypeDef.DataType_Empty)
                 {
-                    func.DynamicInvoke(null, msg.ErrCode, msg.ErrMsg);
+                    return false;
+                }
+                else if (type == DataTypeDef.DataType_Bool)
+                {
+                    return Utils.FromJson<bool>(msg);
+                }
+                else if (type == DataTypeDef.DataType_Int)
+                {
+                    return 0;
                 }
                 else
                 {
-                    func.DynamicInvoke(ConvertDataType(msg.DataType, msg.Data), 0, "");
-                }
-                callBackDic.Remove(msg.OperationId);
-            }
-        }
-        private static object ConvertDataType(int type, string msg)
-        {
-            switch ((DataTypeDef)type)
-            {
-                case DataTypeDef.DataType_Empty:
                     return null;
-                case DataTypeDef.DataType_Int:
-                    return Utils.FromJson<int>(msg);
-                case DataTypeDef.DataType_Bool:
-                    return Utils.FromJson<bool>(msg);
-                case DataTypeDef.DataType_StringArray:
-                    return Utils.FromJson<string[]>(msg);
-                case DataTypeDef.DataType_Conversation:
-                    return Utils.FromJson<Conversation>(msg);
-                case DataTypeDef.DataType_Conversation_List:
-                    return Utils.FromJson<List<Conversation>>(msg);
-                case DataTypeDef.DataType_FindMessageResult:
-                    return Utils.FromJson<FindMessageResult>(msg);
-                case DataTypeDef.DataType_AdvancedHistoryMessageResult:
-                    return Utils.FromJson<AdvancedMessageResult>(msg);
-                case DataTypeDef.DataType_Message:
-                    return Utils.FromJson<Message>(msg);
-                case DataTypeDef.DataType_SearchMessagesResult:
-                    return Utils.FromJson<SearchMessageResult>(msg);
-                case DataTypeDef.DataType_UserInfo:
-                    return Utils.FromJson<UserInfo>(msg);
-                case DataTypeDef.DataType_UserInfo_List:
-                    return Utils.FromJson<List<UserInfo>>(msg);
-                case DataTypeDef.DataType_PublicUserInfo:
-                    return Utils.FromJson<PublicUserInfo>(msg);
-                case DataTypeDef.DataType_PublicUserInfo_List:
-                    return Utils.FromJson<List<PublicUserInfo>>(msg);
-                case DataTypeDef.DataType_OnlineStatus:
-                    return Utils.FromJson<OnlineStatus>(msg);
-                case DataTypeDef.DataType_OnlineStatus_List:
-                    return Utils.FromJson<List<OnlineStatus>>(msg);
-                case DataTypeDef.DataType_SearchFriendItem:
-                    return Utils.FromJson<SearchFriendItem>(msg);
-                case DataTypeDef.DataType_SearchFriendItem_List:
-                    return Utils.FromJson<List<SearchFriendItem>>(msg);
-                case DataTypeDef.DataType_UserIDResult:
-                    return Utils.FromJson<UserIDResult>(msg);
-                case DataTypeDef.DataType_UserIDResult_List:
-                    return Utils.FromJson<List<UserIDResult>>(msg);
-                case DataTypeDef.DataType_FriendInfo:
-                    return Utils.FromJson<FriendInfo>(msg);
-                case DataTypeDef.DataType_FriendInfo_List:
-                    return Utils.FromJson<List<FriendInfo>>(msg);
-                case DataTypeDef.DataType_FriendApplicationInfo:
-                    return Utils.FromJson<FriendApplicationInfo>(msg);
-                case DataTypeDef.DataType_FriendApplicationInfo_List:
-                    return Utils.FromJson<List<FriendApplicationInfo>>(msg);
-                case DataTypeDef.DataType_BlackInfo:
-                    return Utils.FromJson<BlackInfo>(msg);
-                case DataTypeDef.DataType_BlackInfo_List:
-                    return Utils.FromJson<List<BlackInfo>>(msg);
-                case DataTypeDef.DataType_GroupInfo:
-                    return Utils.FromJson<GroupInfo>(msg);
-                case DataTypeDef.DataType_GroupInfo_List:
-                    return Utils.FromJson<List<GroupInfo>>(msg);
-                case DataTypeDef.DataType_GroupMember:
-                    return Utils.FromJson<GroupMember>(msg);
-                case DataTypeDef.DataType_GroupMember_List:
-                    return Utils.FromJson<List<GroupMember>>(msg);
-                case DataTypeDef.DataType_GroupApplicationInfo:
-                    return Utils.FromJson<GroupApplicationInfo>(msg);
-                case DataTypeDef.DataType_GroupApplicationInfo_List:
-                    return Utils.FromJson<List<GroupApplicationInfo>>(msg);
+                }
+            }
+            else
+            {
+                switch (type)
+                {
+                    case DataTypeDef.DataType_Empty:
+                        return true;
+                    case DataTypeDef.DataType_Int:
+                        return Utils.FromJson<int>(msg);
+                    case DataTypeDef.DataType_Bool:
+                        return Utils.FromJson<bool>(msg);
+                    case DataTypeDef.DataType_StringArray:
+                        return Utils.FromJson<string[]>(msg);
+                    case DataTypeDef.DataType_Conversation:
+                        return Utils.FromJson<Conversation>(msg);
+                    case DataTypeDef.DataType_Conversation_List:
+                        return Utils.FromJson<List<Conversation>>(msg);
+                    case DataTypeDef.DataType_FindMessageResult:
+                        return Utils.FromJson<FindMessageResult>(msg);
+                    case DataTypeDef.DataType_AdvancedHistoryMessageResult:
+                        return Utils.FromJson<AdvancedMessageResult>(msg);
+                    case DataTypeDef.DataType_Message:
+                        return Utils.FromJson<Message>(msg);
+                    case DataTypeDef.DataType_SearchMessagesResult:
+                        return Utils.FromJson<SearchMessageResult>(msg);
+                    case DataTypeDef.DataType_UserInfo:
+                        return Utils.FromJson<UserInfo>(msg);
+                    case DataTypeDef.DataType_UserInfo_List:
+                        return Utils.FromJson<List<UserInfo>>(msg);
+                    case DataTypeDef.DataType_PublicUserInfo:
+                        return Utils.FromJson<PublicUserInfo>(msg);
+                    case DataTypeDef.DataType_PublicUserInfo_List:
+                        return Utils.FromJson<List<PublicUserInfo>>(msg);
+                    case DataTypeDef.DataType_OnlineStatus:
+                        return Utils.FromJson<OnlineStatus>(msg);
+                    case DataTypeDef.DataType_OnlineStatus_List:
+                        return Utils.FromJson<List<OnlineStatus>>(msg);
+                    case DataTypeDef.DataType_SearchFriendItem:
+                        return Utils.FromJson<SearchFriendItem>(msg);
+                    case DataTypeDef.DataType_SearchFriendItem_List:
+                        return Utils.FromJson<List<SearchFriendItem>>(msg);
+                    case DataTypeDef.DataType_UserIDResult:
+                        return Utils.FromJson<UserIDResult>(msg);
+                    case DataTypeDef.DataType_UserIDResult_List:
+                        return Utils.FromJson<List<UserIDResult>>(msg);
+                    case DataTypeDef.DataType_FriendInfo:
+                        return Utils.FromJson<FriendInfo>(msg);
+                    case DataTypeDef.DataType_FriendInfo_List:
+                        return Utils.FromJson<List<FriendInfo>>(msg);
+                    case DataTypeDef.DataType_FriendApplicationInfo:
+                        return Utils.FromJson<FriendApplicationInfo>(msg);
+                    case DataTypeDef.DataType_FriendApplicationInfo_List:
+                        return Utils.FromJson<List<FriendApplicationInfo>>(msg);
+                    case DataTypeDef.DataType_BlackInfo:
+                        return Utils.FromJson<BlackInfo>(msg);
+                    case DataTypeDef.DataType_BlackInfo_List:
+                        return Utils.FromJson<List<BlackInfo>>(msg);
+                    case DataTypeDef.DataType_GroupInfo:
+                        return Utils.FromJson<GroupInfo>(msg);
+                    case DataTypeDef.DataType_GroupInfo_List:
+                        return Utils.FromJson<List<GroupInfo>>(msg);
+                    case DataTypeDef.DataType_GroupMember:
+                        return Utils.FromJson<GroupMember>(msg);
+                    case DataTypeDef.DataType_GroupMember_List:
+                        return Utils.FromJson<List<GroupMember>>(msg);
+                    case DataTypeDef.DataType_GroupApplicationInfo:
+                        return Utils.FromJson<GroupApplicationInfo>(msg);
+                    case DataTypeDef.DataType_GroupApplicationInfo_List:
+                        return Utils.FromJson<List<GroupApplicationInfo>>(msg);
+                }
             }
             return null;
         }
