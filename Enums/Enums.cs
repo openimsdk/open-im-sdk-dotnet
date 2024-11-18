@@ -53,6 +53,149 @@ namespace OpenIM.IMSDK
         ReactionMessageModifier = 121,
 
         ReactionMessageDeleter = 122,
+        //////////////////////////////////////////
+        NotificationBegin = 1000,
+
+        FriendNotificationBegin = 1200,
+
+
+        FriendApplicationApprovedNotification = 1201, //add_friend_response
+
+        FriendApplicationRejectedNotification = 1202,//add_friend_response
+
+        FriendApplicationNotification = 1203, //add_friend
+
+        FriendAddedNotification = 1204,
+
+        FriendDeletedNotification = 1205, //delete_friend
+
+        FriendRemarkSetNotification = 1206, //set_friend_remark?
+
+        BlackAddedNotification = 1207, //add_black
+
+        BlackDeletedNotification = 1208, //remove_black
+
+        FriendInfoUpdatedNotification = 1209,
+
+        FriendsInfoUpdateNotification = 1210,
+
+        FriendNotificationEnd = 1299,
+
+        ConversationChangeNotification = 1300,
+
+
+        UserNotificationBegin = 1301,
+
+        UserInfoUpdatedNotification = 1303,
+        //SetSelfInfoTip             = 204
+
+        UserStatusChangeNotification = 1304,
+
+        UserCommandAddNotification = 1305,
+
+        UserCommandDeleteNotification = 1306,
+
+        UserCommandUpdateNotification = 1307,
+
+
+        UserNotificationEnd = 1399,
+
+        OANotification = 1400,
+
+
+        GroupNotificationBegin = 1500,
+
+
+        GroupCreatedNotification = 1501,
+
+        GroupInfoSetNotification = 1502,
+
+        JoinGroupApplicationNotification = 1503,
+
+        MemberQuitNotification = 1504,
+
+        GroupApplicationAcceptedNotification = 1505,
+
+        GroupApplicationRejectedNotification = 1506,
+
+        GroupOwnerTransferredNotification = 1507,
+
+        MemberKickedNotification = 1508,
+
+        MemberInvitedNotification = 1509,
+
+        MemberEnterNotification = 1510,
+
+        GroupDismissedNotification = 1511,
+
+        GroupMemberMutedNotification = 1512,
+
+        GroupMemberCancelMutedNotification = 1513,
+
+        GroupMutedNotification = 1514,
+
+        GroupCancelMutedNotification = 1515,
+
+        GroupMemberInfoSetNotification = 1516,
+
+        GroupMemberSetToAdminNotification = 1517,
+
+        GroupMemberSetToOrdinaryUserNotification = 1518,
+
+        GroupInfoSetAnnouncementNotification = 1519,
+
+        GroupInfoSetNameNotification = 1520,
+
+        GroupNotificationEnd = 1599,
+
+
+        SignalingNotificationBegin = 1600,
+
+        SignalingNotification = 1601,
+
+        SignalingNotificationEnd = 1649,
+
+
+        SuperGroupNotificationBegin = 1650,
+
+        SuperGroupUpdateNotification = 1651,
+
+        MsgDeleteNotification = 1652,
+
+        ReactionMessageModifierNotification = 1653,
+
+        ReactionMessageDeleteNotification = 1654,
+
+        SuperGroupNotificationEnd = 1699,
+
+
+        ConversationPrivateChatNotification = 1701,
+
+        ConversationUnreadNotification = 1702,
+
+
+        WorkMomentNotificationBegin = 1900,
+
+        WorkMomentNotification = 1901,
+
+
+        BusinessNotificationBegin = 2000,
+
+        BusinessNotification = 2001,
+
+        BusinessNotificationEnd = 2099,
+
+
+        RevokeNotification = 2101,
+
+
+        HasReadReceiptNotification = 2150,
+
+        GroupHasReadReceiptNotification = 2155,
+
+        ClearConversationNotification = 2101,
+
+        DeleteMsgsNotification = 2102,
     }
 
     public enum AllowType

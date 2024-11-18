@@ -12,7 +12,7 @@ namespace OpenIM.IMSDK.Native
         static extern void set_msg_handler_func(MessageHandler handler);
 
         [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]
-        static extern IntPtr call_api(int apiKey, string apiArgs);
+        static extern IntPtr call_api(int apiKey, byte[] args);
 
         [DllImport(IMDLLName, CallingConvention = CallingConvention.Cdecl)]
         static extern void free_data(IntPtr memPointer);
@@ -24,7 +24,8 @@ namespace OpenIM.IMSDK.Native
         public static T CallAPI<T>(APIKey key, string apiArgs) where T : class
         {
             Util.Utils.Log(string.Format("[{0}]->{1}", key, apiArgs));
-            IntPtr res = call_api((int)key, apiArgs);
+            byte[] args = System.Text.Encoding.UTF8.GetBytes(apiArgs);
+            IntPtr res = call_api((int)key, args);
             var str = Marshal.PtrToStringUTF8(res);
             free_data(res);
             Util.Utils.Log(string.Format("[{0}]<-{1}", key, str));

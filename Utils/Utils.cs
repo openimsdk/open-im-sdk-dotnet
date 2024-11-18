@@ -11,18 +11,13 @@ namespace OpenIM.IMSDK.Util
         public static void Log(params object[] args)
         {
 #if IMSDK_LOG_ENABLE
-            StackFrame frame = new StackFrame(1, true);
-            string str = "IMSDK:";
-            if (frame != null)
-            {
-                str += Path.GetFileName(frame.GetFileName()) + ":" + frame.GetFileLineNumber() + "=> ";
-            }
+            string prefix = "IMSDK";
+            var info = "";
             foreach (var v in args)
             {
-                str += v.ToString() + " ";
+                info += v.ToString() + " ";
             }
-
-            Console.WriteLine(str);
+            Console.WriteLine(string.Format("[{0}]:{1}", prefix, info));
 #endif
         }
 
